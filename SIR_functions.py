@@ -30,7 +30,7 @@ def plot_SIR(SIR):
     
     plt.show()
 
-def propSIR_simulator(beta, gamma, nt, N, is_bsi = False, bsi_pars = None, agg_bsi = False, nan_locations = [], batch_size = 1, random_state = None):
+def propSIR_simulator(beta, gamma, nt, N, is_bsi = False, bsi_pars = None, agg_bsi = False, is_prop = True, nan_locations = [], batch_size = 1, random_state = None):
     # SIR model with proportions
     
     
@@ -52,16 +52,17 @@ def propSIR_simulator(beta, gamma, nt, N, is_bsi = False, bsi_pars = None, agg_b
     thetaI[:,0] = 1
     thetaR[:,0] = 0
     
-    thetaS[:,0] = thetaS[:,0]/N # recommendation: make S0 the same as N - I0
-    thetaI[:,0] = thetaI[:,0]/N
-    thetaR[:,0] = thetaR[:,0]/N
+    if is_prop:
+        thetaS[:,0] = thetaS[:,0]/N # recommendation: make S0 the same as N - I0
+        thetaI[:,0] = thetaI[:,0]/N
+        thetaR[:,0] = thetaR[:,0]/N
     
     N = np.array([N]*nt)
 
     for t in range(0, nt-1):
 
-        thetaS[:,t + 1] = thetaS[:,t] + dS(thetaS, thetaI, t, beta, N, is_prop = True)
-        thetaI[:,t + 1] = thetaI[:,t] + dI(thetaI, thetaS, t, beta, gamma, N, is_prop = True)
+        thetaS[:,t + 1] = thetaS[:,t] + dS(thetaS, thetaI, t, beta, N, is_prop = is_prop)
+        thetaI[:,t + 1] = thetaI[:,t] + dI(thetaI, thetaS, t, beta, gamma, N, is_prop = is_prop)
         thetaR[:,t + 1] = thetaR[:,t] + dR(thetaI, t, gamma)
 
     if is_bsi:
