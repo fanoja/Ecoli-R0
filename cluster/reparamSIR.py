@@ -41,8 +41,8 @@ gamma = 0.81
 elfi.new_model()
 
 
-param1_prior = elfi.Prior(scipy.stats.uniform,0.01,20)
-param2_prior = elfi.Prior(scipy.stats.uniform, 2, 10)
+par1 = elfi.Prior(scipy.stats.uniform,0.01,20)
+par2 = elfi.Prior(scipy.stats.uniform, 2, 10)
 bs = 10 # batch size
 n_iters = 1000 # elfi.sample input
 
@@ -336,7 +336,8 @@ bsi_pars = {"or_data": or_data, "clade": clade, "dataset": obs_data, "theta_c":t
 if use_obs_data:
     bsi_obs = np.asarray(get_obs_BSI(norm_data, clade = clade)).reshape(1,-1)
 else:
-    bsi_obs = SIR_and_BSI_simulator(net_transmission_param, R_param, nt = n_weeks, N = pop_size, bsi_pars = bsi_pars, is_prop = is_p, is_agg = is_agg, time_period = 52, batch_size = 1, random_state = None)#.flatten()
+    if reparam:
+        bsi_obs = SIR_and_BSI_simulator(net_transmission_param, R_param, nt = n_weeks, N = pop_size, bsi_pars = bsi_pars, is_prop = is_p, is_agg = is_agg, time_period = 52, batch_size = 1, random_state = None)#.flatten()
 
 #bsi_obs = (aggregate_BSI(bsi_obs, nan_locations), aggregate_BSI(bsi_obs, nan_locations), aggregate_BSI(bsi_obs, nan_locations))
 print(bsi_obs.shape)
@@ -350,9 +351,8 @@ print(bsi_obs.ndim)
 # Clancy et al: uninformative gamma priors for beta and gamma
 # Lintusaari et al 2016
 
-par1 = param1_prior
+
 #beta = elfi.Prior(scipy.stats.uniform, 0, 1)
-par2 = param2_prior
 #gamma = elfi.Prior(scipy.stats.norm,1/30,0.01)
 #gamma = elfi.Prior(scipy.stats.uniform, 0, 1)
 
@@ -396,3 +396,6 @@ if not reparam:
     plt.show()
 
 arraypool.flush() # save the contents of arraypool
+
+
+print("Done!")
