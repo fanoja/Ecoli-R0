@@ -7,6 +7,8 @@ from scipy.stats import expon, gamma
 import elfi
 import scipy.stats
 
+# TODO: save the model output in a file - both the actual simulations and the figures
+# TODO: elfi parameters
 
 ## Simulation options ##
 
