@@ -1,3 +1,3 @@
-conda activate ecoli_elfi
+conda activate ecoli-elfi
 
 python3 reparamSIR.py

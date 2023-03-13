@@ -6,19 +6,28 @@ import matplotlib.pyplot as plt
 from scipy.stats import expon, gamma
 import elfi
 import scipy.stats
+import os
 
-# TODO: save the model output in a file - both the actual simulations and the figures
-# TODO: elfi parameters
+cwd = os.getcwd()
+cwd = cwd[0:len(cwd) - len("/cluster")]
+print(f"Current working directory: {cwd}")
+
+# TODO: save in different arraypoolfiles or folders depending on the parameters
+# TODO: create a nice naming convention for saved files and figures
+# TODO: reading simulation parameters from the command line to this script
+# TODO: test that this works
 
 ## Simulation options ##
 
 use_obs_data = False # use observed or simulated data
 is_agg = True # aggregate data?
+reparam = True # reparametrized or not?
 clade = "A"
 obs_data = "NORM" # NORM, BSAC
 
 theta_bsi = 0.3 # proportion of population interest (age group) with BSI
 theta_c = 1 # proportion of colonized
+
 
 # parameters for simulated data
 
@@ -28,34 +37,38 @@ R_param = 5
 beta = 0.234
 gamma = 0.81
 
-# priors for parameters
+# ELFI-related simulation parameters
+elfi.new_model()
 
 param1_prior = elfi.Prior(scipy.stats.uniform,0.01,20)
 param2_prior = elfi.Prior(scipy.stats.uniform, 2, 10)
+bs = 10 # batch size
+n_iters = 1000 # elfi.sample input
 
-
+figtag = "test" # an identifier for saved histograms
+simulation_name = "testsim" # a name for the simulation (descriptive of the parameters etc)
 
 ## Loading the data ##
 
 # load NORM data
 
-norm_data = pd.read_excel("data/mmc2.xlsx", engine = 'openpyxl') # this is the NORM data
+norm_data = pd.read_excel(f"{cwd}/data/mmc2.xlsx", engine = 'openpyxl') # this is the NORM data
 
 
 # load BSAC data
-bsac_data = pd.read_csv("data/Supplemental_Data_S1.csv")
+bsac_data = pd.read_csv(f"{cwd}/data/Supplemental_Data_S1.csv")
 
 
 df = norm_data
 
 
 # load babybiome data
-or_data = pd.read_csv("data/ST131_clades_OR_E_coli_carriage_disease_collapsed.csv")
+or_data = pd.read_csv(f"{cwd}/data/ST131_clades_OR_E_coli_carriage_disease_collapsed.csv")
 
 
 # load population data
 
-norway_pop_data = pd.read_csv("data/Norway_population_2002-2017.csv", sep = '\t', header = 0, index_col = 0)
+norway_pop_data = pd.read_csv(f"{cwd}/data/Norway_population_2002-2017.csv", sep = '\t', header = 0, index_col = 0)
 
 
 # load age distribution data
@@ -296,7 +309,7 @@ print(f'Population size: {pop_size}')
 
 # A simple SIR with elfi
 
-elfi.new_model()
+#elfi.new_model()
 
 # simulated data, proportions:
 #SIR_obs = propSIR_simulator(0.734, 1/30, nt = n_weeks, N = pop_size, batch_size = 1)   
@@ -322,7 +335,7 @@ bsi_pars = {"or_data": or_data, "clade": clade, "dataset": obs_data, "theta_c":t
 if use_obs_data:
     bsi_obs = np.asarray(get_obs_BSI(norm_data, clade = clade)).reshape(1,-1)
 else:
-    bsi_obs = SIR_and_BSI_simulator(net_transmission_param, R_param, nt = n_weeks, N = pop_size, bsi_pars = bsi_pars, is_prop = is_p, is_agg = agg_bsi, time_period = 52, batch_size = 1, random_state = None)#.flatten()
+    bsi_obs = SIR_and_BSI_simulator(net_transmission_param, R_param, nt = n_weeks, N = pop_size, bsi_pars = bsi_pars, is_prop = is_p, is_agg = is_agg, time_period = 52, batch_size = 1, random_state = None)#.flatten()
 
 #bsi_obs = (aggregate_BSI(bsi_obs, nan_locations), aggregate_BSI(bsi_obs, nan_locations), aggregate_BSI(bsi_obs, nan_locations))
 print(bsi_obs.shape)
@@ -336,20 +349,20 @@ print(bsi_obs.ndim)
 # Clancy et al: uninformative gamma priors for beta and gamma
 # Lintusaari et al 2016
 
-net_transmission = param1_prior
+par1 = param1_prior
 #beta = elfi.Prior(scipy.stats.uniform, 0, 1)
-R = param2_prior
+par2 = param2_prior
 #gamma = elfi.Prior(scipy.stats.norm,1/30,0.01)
 #gamma = elfi.Prior(scipy.stats.uniform, 0, 1)
 
 nt = elfi.Constant(n_weeks)
 N = elfi.Constant(pop_size)
 is_prop = elfi.Constant(is_p)
-is_agg = elfi.Constant(agg_bsi)
+is_agg = elfi.Constant(is_agg)
 time_period = elfi.Constant(52)
 
 bsi_pars = elfi.Constant(bsi_pars)
-SIR = elfi.Simulator(SIR_and_BSI_simulator, net_transmission, R, nt, N, bsi_pars, is_prop, is_agg, time_period, observed = bsi_obs)
+SIR = elfi.Simulator(SIR_and_BSI_simulator, par1, par2, nt, N, bsi_pars, is_prop, is_agg, time_period, observed = bsi_obs)
 
 S1 = elfi.Summary(BSI_max_t, SIR)
 S2 = elfi.Summary(BSI_max, SIR)
@@ -360,3 +373,25 @@ d = elfi.Distance('euclidean', S1, S2)
 elfi.draw(d)
 
 elfi.set_client('multiprocessing') # parallellization
+
+### Simulation ###
+arraypool = elfi.ArrayPool(['par1', 'par2', 'SIR', 'd']) # saves the simulated output
+
+smc = elfi.AdaptiveThresholdSMC(d, batch_size=bs, seed=2, q_threshold=0.995)
+smc_samples = smc.sample(n_iters, max_iter=10)
+
+
+# display results
+
+#print("R0:", smc_samples.samples['par1'].mean()/smc_samples.samples['par2'].mean())
+print("Means of the parameters:", smc_samples.samples['par1'].mean(), smc_samples.samples['par2'].mean())
+smc_samples.plot_pairs()
+plt.savefig(f"{figtag}_pairs.pdf") #plt.show()
+
+
+if not reparam:
+    plt.hist(smc_samples.samples['beta']/smc_samples.samples['gamma'])
+    plt.title("RO = beta/gamma")
+    plt.show()
+
+arraypool.flush() # save the contents of arraypool
