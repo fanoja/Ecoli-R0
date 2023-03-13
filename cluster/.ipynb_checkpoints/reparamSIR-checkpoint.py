@@ -1,6 +1,5 @@
 # Reparametrized SIR
 
-
 import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
@@ -15,6 +14,24 @@ use_obs_data = False # use observed or simulated data
 is_agg = True # aggregate data?
 clade = "A"
 obs_data = "NORM" # NORM, BSAC
+
+theta_bsi = 0.3 # proportion of population interest (age group) with BSI
+theta_c = 1 # proportion of colonized
+
+# parameters for simulated data
+
+net_transmission_param = 2
+R_param = 5
+
+beta = 0.234
+gamma = 0.81
+
+# priors for parameters
+
+param1_prior = elfi.Prior(scipy.stats.uniform,0.01,20)
+param2_prior = elfi.Prior(scipy.stats.uniform, 2, 10)
+
+
 
 ## Loading the data ##
 
@@ -298,12 +315,12 @@ is_p = True
 # Actual data:
 #bsi_obs = np.asarray(get_obs_BSI(norm_data, clade = clade)).reshape(1,-1)
 #print(bsi_obs)
-bsi_pars = {"or_data": or_data, "clade": clade, "dataset": obs_data, "theta_c":1, "theta_bsi":0.3}
+bsi_pars = {"or_data": or_data, "clade": clade, "dataset": obs_data, "theta_c":theta_c, "theta_bsi":theta_bsi}
 
 if use_obs_data:
     bsi_obs = np.asarray(get_obs_BSI(norm_data, clade = clade)).reshape(1,-1)
 else:
-    bsi_obs = SIR_and_BSI_simulator(2, 5, nt = n_weeks, N = pop_size, bsi_pars = bsi_pars, is_prop = is_p, is_agg = agg_bsi, time_period = 52, batch_size = 1, random_state = None)#.flatten()
+    bsi_obs = SIR_and_BSI_simulator(net_transmission_param, R_param, nt = n_weeks, N = pop_size, bsi_pars = bsi_pars, is_prop = is_p, is_agg = agg_bsi, time_period = 52, batch_size = 1, random_state = None)#.flatten()
 
 #bsi_obs = (aggregate_BSI(bsi_obs, nan_locations), aggregate_BSI(bsi_obs, nan_locations), aggregate_BSI(bsi_obs, nan_locations))
 print(bsi_obs.shape)
@@ -317,9 +334,9 @@ print(bsi_obs.ndim)
 # Clancy et al: uninformative gamma priors for beta and gamma
 # Lintusaari et al 2016
 
-net_transmission = elfi.Prior(scipy.stats.uniform,0.01,20)
+net_transmission = param1_prior
 #beta = elfi.Prior(scipy.stats.uniform, 0, 1)
-R = elfi.Prior(scipy.stats.uniform, 2, 10)
+R = param2_prior
 #gamma = elfi.Prior(scipy.stats.norm,1/30,0.01)
 #gamma = elfi.Prior(scipy.stats.uniform, 0, 1)
 
