@@ -12,8 +12,6 @@ cwd = os.getcwd()
 cwd = cwd[0:len(cwd) - len("/cluster")]
 print(f"Current working directory: {cwd}")
 
-# TODO: save in different arraypoolfiles or folders depending on the parameters
-# TODO: create a nice naming convention for saved files and figures
 # TODO: reading simulation parameters from the command line to this script
 # TODO: test that this works
 
@@ -22,7 +20,7 @@ print(f"Current working directory: {cwd}")
 use_obs_data = False # use observed or simulated data
 is_agg = False # aggregate data?
 reparam = True # reparametrized or not?
-clade = "A"
+clade = "A" # clade of interest
 obs_data = "NORM" # NORM, BSAC
 
 theta_bsi = 0.3 # proportion of population interest (age group) with BSI
@@ -40,15 +38,42 @@ gamma = 0.81
 # ELFI-related simulation parameters
 elfi.new_model()
 
+prior_type = "gamma_normal" # what prior configuration to use for the parameters of interest?
 
-par1 = elfi.Prior(scipy.stats.uniform,0.01,20)
-par2 = elfi.Prior(scipy.stats.uniform, 2, 10)
+if reparam:
+    par1 = elfi.Prior(scipy.stats.uniform,0.01,20)
+    par2 = elfi.Prior(scipy.stats.uniform, 2, 10)
+else:
+    if priory_type == "gamma_normal":
+        par1 = elfi.Prior(scipy.stats.gamma, 1, 0, 1/0.1)
+        par2 = elfi.Prior(scipy.stats.normal, 1/30, 0.01)
+    elif prior_type == "gamma_constant":
+        par1 = elfi.Prior(scipy.stats.gamma, 1, 0, 1/0.1)
+        par2 = elfi.Constant(1/30)
+    elif prior_type == "uniform":
+        par1 = elfi.Prior(scipy.stats.uniform, 0, 10)
+        par2 = elfi.Prior(scipy.stats.uniform, 0, 10)
+    elif prior_type == "gamma":
+        par1 = elfi.Prior(scipy.stats.gamma, 1, 0, 1/0.1)
+        par2 = elfi.Prior(scipy.stats.gamma, 1, 0, 1/0.1)    
+    else:
+        print("Warning! Unknown prior type. Using gamma priors.")
+        par1 = elfi.Prior(scipy.stats.gamma, 1, 0, 1/0.1)
+        par2 = elfi.Prior(scipy.stats.gamma, 1, 0, 1/0.1)
+   
+
 bs = 10 # batch size
 n_iters = 1000 # elfi.sample input
 
-figtag = "test" # an identifier for saved histograms
-simulation_name = "testsim" # a name for the simulation (descriptive of the parameters etc)
 
+# create an identifier for figures/models:
+agg = ""
+if is_agg:
+    agg == "agg_"
+figtag = f"{obs_data}_{clade}_{agg}{prior_type}" # an identifier for saved figures and files
+if reparam:
+    figtag += "_reparam"
+    
 ## Loading the data ##
 
 # load NORM data
@@ -337,7 +362,9 @@ if use_obs_data:
     bsi_obs = np.asarray(get_obs_BSI(norm_data, clade = clade)).reshape(1,-1)
 else:
     if reparam:
-        bsi_obs = SIR_and_BSI_simulator(net_transmission_param, R_param, nt = n_weeks, N = pop_size, bsi_pars = bsi_pars, is_prop = is_p, is_agg = is_agg, time_period = 52, batch_size = 1, random_state = None)#.flatten()
+        bsi_obs = SIR_and_BSI_simulator(net_transmission_param, R_param, nt = n_weeks, N = pop_size, bsi_pars = bsi_pars, is_prop = is_p, is_agg = is_agg, time_period = 52, batch_size = 1, random_state = None)
+    else:
+        bsi_obs = SIR_and_BSI_simulator(beta, gamma, nt = n_weeks, N = pop_size, bsi_pars = bsi_pars, is_prop = is_p, is_agg = is_agg, time_period = 52, batch_size = 1, random_state = None)
 
 #bsi_obs = (aggregate_BSI(bsi_obs, nan_locations), aggregate_BSI(bsi_obs, nan_locations), aggregate_BSI(bsi_obs, nan_locations))
 print(bsi_obs.shape)
@@ -376,7 +403,7 @@ elfi.draw(d)
 elfi.set_client('multiprocessing') # parallellization
 
 ### Simulation ###
-arraypool = elfi.ArrayPool(['par1', 'par2', 'SIR', 'd']) # saves the simulated output
+arraypool = elfi.ArrayPool(['par1', 'par2', 'SIR', 'd'], name = figtag, prefix = f"{cwd}/cluster/elfi_output") # saves the simulated output
 
 smc = elfi.AdaptiveThresholdSMC(d, batch_size=bs, seed=2, q_threshold=0.995)
 smc_samples = smc.sample(n_iters, max_iter=10)
@@ -396,6 +423,5 @@ if not reparam:
     plt.show()
 
 arraypool.save() # save the contents of arraypool
-
 
 print("Done!")
