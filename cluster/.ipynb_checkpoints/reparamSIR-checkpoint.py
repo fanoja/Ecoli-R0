@@ -20,7 +20,7 @@ print(f"Current working directory: {cwd}")
 ## Simulation options ##
 
 use_obs_data = False # use observed or simulated data
-is_agg = True # aggregate data?
+is_agg = False # aggregate data?
 reparam = True # reparametrized or not?
 clade = "A"
 obs_data = "NORM" # NORM, BSAC
@@ -387,7 +387,7 @@ smc_samples = smc.sample(n_iters, max_iter=10)
 #print("R0:", smc_samples.samples['par1'].mean()/smc_samples.samples['par2'].mean())
 print("Means of the parameters:", smc_samples.samples['par1'].mean(), smc_samples.samples['par2'].mean())
 smc_samples.plot_pairs()
-plt.savefig(f"{figtag}_pairs.pdf") #plt.show()
+plt.savefig(f"res/{figtag}_pairs.pdf") #plt.show()
 
 
 if not reparam:
@@ -395,7 +395,7 @@ if not reparam:
     plt.title("RO = beta/gamma")
     plt.show()
 
-arraypool.flush() # save the contents of arraypool
+arraypool.save() # save the contents of arraypool
 
 
 print("Done!")

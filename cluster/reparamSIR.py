@@ -20,7 +20,7 @@ print(f"Current working directory: {cwd}")
 ## Simulation options ##
 
 use_obs_data = False # use observed or simulated data
-is_agg = True # aggregate data?
+is_agg = False # aggregate data?
 reparam = True # reparametrized or not?
 clade = "A"
 obs_data = "NORM" # NORM, BSAC
@@ -40,9 +40,29 @@ gamma = 0.81
 # ELFI-related simulation parameters
 elfi.new_model()
 
+prior_type = "gamma_normal" # what prior configuration to use for the parameters of interest?
 
-par1 = elfi.Prior(scipy.stats.uniform,0.01,20)
-par2 = elfi.Prior(scipy.stats.uniform, 2, 10)
+if reparam:
+    par1 = elfi.Prior(scipy.stats.uniform,0.01,20)
+    par2 = elfi.Prior(scipy.stats.uniform, 2, 10)
+else:
+    if priory_type == "gamma_normal":
+        par1 = elfi.Prior(scipy.stats.gamma, 1, 0, 1/0.1)
+        par2 = elfi.Prior(scipy.stats.normal, 1/30, 0.01)
+    elif prior_type == "gamma_constant":
+        par1 = elfi.Prior(scipy.stats.gamma, 1, 0, 1/0.1)
+        par2 = elfi.Constant(1/30)
+    elif prior_type == "uniform":
+        par1 = elfi.Prior(scipy.stats.uniform, 0, 10)
+        par2 = elfi.Prior(scipy.stats.uniform, 0, 10)
+    elif prior_type == "gamma":
+        par1 = elfi.Prior(scipy.stats.gamma, 1, 0, 1/0.1)
+        par2 = elfi.Prior(scipy.stats.gamma, 1, 0, 1/0.1)    
+    else:
+        print("Warning! Unknown prior type. Using gamma priors.")
+        par1 = elfi.Prior(scipy.stats.gamma, 1, 0, 1/0.1)
+        par2 = elfi.Prior(scipy.stats.gamma, 1, 0, 1/0.1)  
+   
 bs = 10 # batch size
 n_iters = 1000 # elfi.sample input
 
@@ -337,7 +357,9 @@ if use_obs_data:
     bsi_obs = np.asarray(get_obs_BSI(norm_data, clade = clade)).reshape(1,-1)
 else:
     if reparam:
-        bsi_obs = SIR_and_BSI_simulator(net_transmission_param, R_param, nt = n_weeks, N = pop_size, bsi_pars = bsi_pars, is_prop = is_p, is_agg = is_agg, time_period = 52, batch_size = 1, random_state = None)#.flatten()
+        bsi_obs = SIR_and_BSI_simulator(net_transmission_param, R_param, nt = n_weeks, N = pop_size, bsi_pars = bsi_pars, is_prop = is_p, is_agg = is_agg, time_period = 52, batch_size = 1, random_state = None)
+    else:
+        bsi_obs = SIR_and_BSI_simulator(beta, gamma, nt = n_weeks, N = pop_size, bsi_pars = bsi_pars, is_prop = is_p, is_agg = is_agg, time_period = 52, batch_size = 1, random_state = None)
 
 #bsi_obs = (aggregate_BSI(bsi_obs, nan_locations), aggregate_BSI(bsi_obs, nan_locations), aggregate_BSI(bsi_obs, nan_locations))
 print(bsi_obs.shape)
@@ -387,7 +409,7 @@ smc_samples = smc.sample(n_iters, max_iter=10)
 #print("R0:", smc_samples.samples['par1'].mean()/smc_samples.samples['par2'].mean())
 print("Means of the parameters:", smc_samples.samples['par1'].mean(), smc_samples.samples['par2'].mean())
 smc_samples.plot_pairs()
-plt.savefig(f"{figtag}_pairs.pdf") #plt.show()
+plt.savefig(f"res/{figtag}_pairs.pdf") #plt.show()
 
 
 if not reparam:
@@ -395,7 +417,6 @@ if not reparam:
     plt.title("RO = beta/gamma")
     plt.show()
 
-arraypool.flush() # save the contents of arraypool
-
+arraypool.save() # save the contents of arraypool
 
 print("Done!")
