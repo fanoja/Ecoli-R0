@@ -1,0 +1,4 @@
+uniform
+gamma
+gamma_normal
+gamma_constant

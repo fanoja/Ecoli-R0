@@ -40,9 +40,9 @@ gamma = 0.81
 # ELFI-related simulation parameters
 elfi.new_model()
 
-if reparam:
-    param1_prior = elfi.Prior(scipy.stats.uniform,0.01,20)
-    param2_prior = elfi.Prior(scipy.stats.uniform, 2, 10)
+
+param1_prior = elfi.Prior(scipy.stats.uniform,0.01,20)
+param2_prior = elfi.Prior(scipy.stats.uniform, 2, 10)
 bs = 10 # batch size
 n_iters = 1000 # elfi.sample input
 
@@ -391,7 +391,7 @@ plt.savefig(f"{figtag}_pairs.pdf") #plt.show()
 
 
 if not reparam:
-    plt.hist(smc_samples.samples['beta']/smc_samples.samples['gamma'])
+    plt.hist(smc_samples.samples['par1']/smc_samples.samples['par2'])
     plt.title("RO = beta/gamma")
     plt.show()
 
