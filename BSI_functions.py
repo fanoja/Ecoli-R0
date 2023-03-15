@@ -60,6 +60,24 @@ def col_to_BSI(SIR, OR_hat, theta_c = 1, theta_bsi = 0.3, is_prop = True):
     
     return theta_bsi_a_hat
 
+
+def sum_over_bsi(bsi_obs, time_period = 52):
+    # Take a sum over every ith week in bsi_obs (from i to i + time_period, where i is the current week)
+    # Note: probably not applicable for proportion observations, only counts
+    # time_period: time period to sum over. By default 52 (weeks).
+    
+    n_years = len(bsi_obs[0])//52
+    #print(f'Number of years to sum: {n_years}')
+    agg_bsi = []
+    for i in range(0, n_years):
+        start = i*time_period # which week to start summing at
+        end = time_period*i + time_period # next week
+        bsi_obs_yearly = bsi_obs[:,start:end]
+        agg_bsi.append(np.sum(bsi_obs_yearly[:,], axis = 1))
+    agg_bsi = np.asarray(agg_bsi).transpose()   
+    
+    return agg_bsi
+
 def plot_col_to_BSI(SIR, or_data = or_data, clade = "A", dataset = "NORM", n_rep = 100, theta_c = 1, theta_bsi = 0.3, is_prop = True):
     # Plot n_rep repetitions of theta_BSI_clade as "translated" from colonization by clade of interest.
     
@@ -97,28 +115,12 @@ def plot_BSI(y_bsi):
 
     
 ### Combining SIR and the observational model (BSI model) ###
-# NOTE! You need to import SIR_functions.py for these to work.
 
-def sum_over_bsi(bsi_obs, time_period = 52):
-    # Take a sum over every ith week in bsi_obs (from i to i + time_period, where i is the current week)
-    # Note: probably not applicable for proportion observations, only counts
-    # time_period: time period to sum over. By default 52 (weeks).
-    
-    n_years = len(bsi_obs[0])//52
-    #print(f'Number of years to sum: {n_years}')
-    agg_bsi = []
-    for i in range(0, n_years):
-        start = i*time_period # which week to start summing at
-        end = time_period*i + time_period # next week
-        bsi_obs_yearly = bsi_obs[:,start:end]
-        agg_bsi.append(np.sum(bsi_obs_yearly[:,], axis = 1))
-    agg_bsi = np.asarray(agg_bsi).transpose()   
-    
-    return agg_bsi
 
 def SIR_and_BSI_simulator(par1, par2, nt, N, bsi_pars, is_prop = False, is_agg = False, time_period = 52, reparam = False, batch_size = 1, random_state = None):
     # A simulator function combining both the SIR simulation and the observational model
     
+    from SIR_functions import SIR, prop_to_nSIR
     
     # SIR simulator:
     SIRsim = SIR(par1, par2, nt = nt, N = N, reparam = reparam, batch_size = batch_size, random_state = random_state)
