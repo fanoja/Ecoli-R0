@@ -85,9 +85,19 @@ def plot_col_to_BSI(SIR, or_data = or_data, clade = "A", dataset = "NORM", n_rep
         plt.ylabel("Count")       
     plt.legend()
     plt.show()
+    
+def plot_BSI(y_bsi):
+    
+    if len(y_bsi) > 1:
+        plt.plot(y_bsi[0][0], label = "BSI associated with the clade of interest")
+    else:
+        plt.plot(y_bsi[0], label = "BSI associated with the clade of interest")
+    plt.legend()
+    plt.show()
 
     
 ### Combining SIR and the observational model (BSI model) ###
+# NOTE! You need to import SIR_functions.py for these to work.
 
 def sum_over_bsi(bsi_obs, time_period = 52):
     # Take a sum over every ith week in bsi_obs (from i to i + time_period, where i is the current week)
@@ -133,3 +143,23 @@ def SIR_and_BSI_simulator(par1, par2, nt, N, bsi_pars, is_prop = False, is_agg =
         BSI = sum_over_bsi(BSI, time_period = time_period)
 
     return BSI
+
+
+def plot_SIR_and_BSI(y, OR_hat):
+    # y: I compartment values of an SIR simulation 
+    
+    y_bsi = col_to_BSI(y, OR_hat = OR_hat)
+    #print(y[0][0]) # S and 1st batch
+
+    #print(y)
+    # Plot some simulated colonization and then BSI as determined from that colonization
+    plt.plot(y[0][0], label = "Not colonized or colonized by another clade (S)")
+    plt.plot(y[1][0], label = "Colonized by clade of interest (I)")
+    
+    if len(y_bsi) > 1:
+        plt.plot(y_bsi[0][0], label = "BSI associated with the clade of interest")
+    else:
+        plt.plot(y_bsi[0], label = "BSI associated with the clade of interest")
+    plt.legend(loc = 'upper right')
+    plt.show()
+    
