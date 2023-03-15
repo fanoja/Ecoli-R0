@@ -421,6 +421,6 @@ if not reparam:
     plt.title("RO = beta/gamma")
     plt.show()
 
-arraypool.save() # save the contents of arraypool TODO: does not work
+arraypool.save()
 
 print("Done!")

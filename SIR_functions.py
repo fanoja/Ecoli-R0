@@ -1,4 +1,4 @@
-# SIR model (proportions)
+# SIR model related functions
 
     
 def dS(S, I, t, beta, N, is_prop = False):
@@ -30,21 +30,23 @@ def plot_SIR(SIR):
     
     plt.show()
     
+def check_SIR_nonneg(comp_t, dcomp):
+    # Checks that the new value in this compartment is nonnegative. If not, add zero to comp
+    # Check also that no compartment goes over 1
+    # Note: This is for proportional SIR!
+    # comp: compartment of interest, S, I or R for example
+    # dcomp: change in the compartment
+    # comp_t: current value in the compartment
+    
+    comp_t1 = comp_t + dcomp
+    
+    comp_t1[comp_t1 < 0] = 0 # set negative values to zero
+    comp_t1[comp_t1 > 1] = comp_t[np.where(comp_t1 > 1)] # If any proportion goes above 1 after addition
+    
+    return comp_t1
 
-def propSIR_simulator(beta, gamma, nt, N, is_bsi = False, bsi_pars = None, agg_bsi = False, is_prop = True, nan_locations = [], batch_size = 1, random_state = None):
-    # SIR model with proportions
-    
-    
-    #bsi_params = {"theta_C":0.6, "theta_BSI": 0.05, "mu_OR":0.4, "var_OR":0.6, "OR_size":100}
-    #params = {"S0": 100000 - 1, "I0": 1, "R0":0}
-    #print(f'beta: {beta}, gamma: {gamma}')
-    
-    #beta = np.asanyarray(beta).reshape((-1, 1))
-    #gamma = np.asanyarray(gamma).reshape((-1, 1))
-    
-    #print(f'beta shape: {beta.shape}, gamma shape: {gamma.shape}')
-    
-    import numpy as np
+def SIR(par1, par2, nt, N, reparam = False, batch_size=1, random_state = None):
+
     thetaS = np.zeros((batch_size, nt))
     thetaI = np.zeros((batch_size, nt))
     thetaR = np.zeros((batch_size, nt))
@@ -53,36 +55,34 @@ def propSIR_simulator(beta, gamma, nt, N, is_bsi = False, bsi_pars = None, agg_b
     thetaI[:,0] = 1
     thetaR[:,0] = 0
     
-    if is_prop:
-        thetaS[:,0] = thetaS[:,0]/N # recommendation: make S0 the same as N - I0
-        thetaI[:,0] = thetaI[:,0]/N
-        thetaR[:,0] = thetaR[:,0]/N
+    thetaS[:,0] = thetaS[:,0]/N # recommendation: make S0 the same as N - I0
+    thetaI[:,0] = thetaI[:,0]/N
+    thetaR[:,0] = thetaR[:,0]/N
     
     N = np.array([N]*nt)
+    
+    if reparam:
+        a = par1/(1 - 1/par2)
+        b = par1/(par2 - 1)
+    else:
+        a = par1
+        b = par2
 
+    
     for t in range(0, nt-1):
 
-        thetaS[:,t + 1] = thetaS[:,t] + dS(thetaS, thetaI, t, beta, N, is_prop = is_prop)
-        thetaI[:,t + 1] = thetaI[:,t] + dI(thetaI, thetaS, t, beta, gamma, N, is_prop = is_prop)
-        thetaR[:,t + 1] = thetaR[:,t] + dR(thetaI, t, gamma)
-
-    if is_bsi:
-        
-        or_data = bsi_pars["or_data"]
-        clade = bsi_pars["clade"]
-        dataset = bsi_pars["dataset"]
-        theta_c = bsi_pars["theta_c"]
-        theta_bsi = bsi_pars["theta_bsi"]
-        
-        
-        or_hat = get_OR_hat(or_data = or_data, clade = clade, dataset = dataset, batch_size = batch_size, random_state = random_state)
-        bsi = col_to_BSI((thetaS, thetaI, thetaR), OR_hat, theta_c = 1, theta_bsi = 0.3)
-        #print(len(bsi))
-        
-        if agg_bsi:
-            bsi = aggregate_BSI(bsi, nan_locations = nan_locations, batch_size = batch_size)
-            return bsi, bsi, bsi
-        
-        return bsi
+        thetaS[:,t + 1] = check_SIR_nonneg(thetaS[:,t], dS(thetaS, thetaI, t, a, N, is_prop = True))
+        thetaI[:,t + 1] = check_SIR_nonneg(thetaI[:,t], dI(thetaI, thetaS, t, a, b, N, is_prop = True))
+        thetaR[:,t + 1] = check_SIR_nonneg(thetaR[:,t], dR(thetaI, t, b))
         
     return thetaS, thetaI, thetaR
+
+
+def prop_to_nSIR(SIR, N):
+    # Convert proportions to counts in a SIR model
+    
+    S = SIR[0]
+    I = SIR[1]
+    R = SIR[2]
+    
+    return S[:,]*N, I[:,]*N, R[:,]*N
