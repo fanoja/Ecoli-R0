@@ -19,7 +19,7 @@ print(f"Current working directory: {cwd}")
 
 use_obs_data = False # use observed or simulated data
 is_agg = False # aggregate data?
-reparam = True # reparametrized or not?
+reparam = False # reparametrized or not?
 clade = "A" # clade of interest
 obs_data = "NORM" # NORM, BSAC
 
@@ -32,19 +32,19 @@ theta_c = 1 # proportion of colonized
 net_transmission_param = 2
 R_param = 5
 
-beta = 0.234
-gamma = 0.81
+beta = 0.734
+gamma = 0.34
 
 # ELFI-related simulation parameters
 elfi.new_model()
 
-prior_type = "gamma_normal" # what prior configuration to use for the parameters of interest?
+prior_type = "gamma" # what prior configuration to use for the parameters of interest?
 
 if reparam:
     par1 = elfi.Prior(scipy.stats.uniform,0.01,20)
     par2 = elfi.Prior(scipy.stats.uniform, 2, 10)
 else:
-    if priory_type == "gamma_normal":
+    if prior_type == "gamma_normal":
         par1 = elfi.Prior(scipy.stats.gamma, 1, 0, 1/0.1)
         par2 = elfi.Prior(scipy.stats.normal, 1/30, 0.01)
     elif prior_type == "gamma_constant":
@@ -60,20 +60,27 @@ else:
         print("Warning! Unknown prior type. Using gamma priors.")
         par1 = elfi.Prior(scipy.stats.gamma, 1, 0, 1/0.1)
         par2 = elfi.Prior(scipy.stats.gamma, 1, 0, 1/0.1)
-   
-
+        
+        
 bs = 10 # batch size
-n_iters = 1000 # elfi.sample input
+n_iters = 2000 # elfi.sample input
 
 
 # create an identifier for figures/models:
 agg = ""
 if is_agg:
     agg == "agg_"
-figtag = f"{obs_data}_{clade}_{agg}{prior_type}" # an identifier for saved figures and files
+figtag = f"{obs_data}_{clade}_{agg}" # an identifier for saved figures and files
+
 if reparam:
     figtag += "_reparam"
-    
+    if not use_obs_data:
+        figtag += f"_sim-{net_transmission_rate_param}-{R_param}"
+else:
+    figtag += f"_{prior_type}"
+    if not use_obs_data:
+        figtag += f"_sim-{beta}-{gamma}"    
+        
 ## Loading the data ##
 
 # load NORM data
@@ -219,7 +226,7 @@ def check_SIR_nonneg(comp_t, dcomp):
     
     return comp_t1
 
-def SIR_reparam(net_transmission, R, nt, N, batch_size=1, random_state = None):
+def SIR(par1, par2, nt, N, reparam = False, batch_size=1, random_state = None):
 
     thetaS = np.zeros((batch_size, nt))
     thetaI = np.zeros((batch_size, nt))
@@ -235,8 +242,12 @@ def SIR_reparam(net_transmission, R, nt, N, batch_size=1, random_state = None):
     
     N = np.array([N]*nt)
     
-    a = net_transmission/(1 - 1/R)
-    b = net_transmission/(R - 1)
+    if reparam:
+        a = par1/(1 - 1/par2)
+        b = par1/(par2 - 1)
+    else:
+        a = par1
+        b = par2
 
     
     for t in range(0, nt-1):
@@ -274,15 +285,15 @@ def sum_over_bsi(bsi_obs, time_period = 52):
     
     return agg_bsi
 
-def SIR_and_BSI_simulator(net_transmission, R, nt, N, bsi_pars, is_prop = False, is_agg = False, time_period = 52, batch_size = 1, random_state = None):
+def SIR_and_BSI_simulator(par1, par2, nt, N, bsi_pars, is_prop = False, is_agg = False, time_period = 52, reparam = False, batch_size = 1, random_state = None):
     # A simulator function combining both the SIR simulation and the observational model
     
     
     # SIR simulator:
-    SIR = SIR_reparam(net_transmission = net_transmission, R = R, nt = nt, N = N, batch_size = batch_size, random_state = random_state)
+    SIRsim = SIR(par1, par2, nt = nt, N = N, reparam = reparam, batch_size = batch_size, random_state = random_state)
     
     if not is_prop:
-        SIR = prop_to_nSIR(SIR, N)
+        SIRsim = prop_to_nSIR(SIR, N)
         
     # Observational model:
     
@@ -295,7 +306,7 @@ def SIR_and_BSI_simulator(net_transmission, R, nt, N, bsi_pars, is_prop = False,
     
     or_hat = get_OR_hat(or_data, clade, dataset, batch_size = batch_size, random_state = random_state)
     
-    BSI = col_to_BSI(SIR, or_hat, theta_c = theta_c, theta_bsi = theta_bsi, is_prop = is_prop)
+    BSI = col_to_BSI(SIRsim, or_hat, theta_c = theta_c, theta_bsi = theta_bsi, is_prop = is_prop)
     
     if is_agg:
         BSI = sum_over_bsi(BSI, time_period = time_period)
@@ -337,20 +348,6 @@ print(f'Population size: {pop_size}')
 
 #elfi.new_model()
 
-# simulated data, proportions:
-#SIR_obs = propSIR_simulator(0.734, 1/30, nt = n_weeks, N = pop_size, batch_size = 1)   
-#OR_hat = get_OR_hat(or_data, clade = "A", dataset = "NORM")
-#bsi_obs = col_to_BSI(SIR_obs, OR_hat = OR_hat)
-
-#print(bsi_obs)
-#bsi_obs = (aggregate_BSI(bsi_obs, nan_locations = []), aggregate_BSI(bsi_obs, nan_locations = []) , aggregate_BSI(bsi_obs, nan_locations = [])) # no missing values in simulated data
-#print(bsi_obs)
-#nan_locations = np.where(np.isnan(bsi_obs))[0]
-#print(nan_locations)
-
-
-
-# simulated data, counts with a summation aggregate:
 is_p = True
 
 # Actual data:
@@ -362,9 +359,9 @@ if use_obs_data:
     bsi_obs = np.asarray(get_obs_BSI(norm_data, clade = clade)).reshape(1,-1)
 else:
     if reparam:
-        bsi_obs = SIR_and_BSI_simulator(net_transmission_param, R_param, nt = n_weeks, N = pop_size, bsi_pars = bsi_pars, is_prop = is_p, is_agg = is_agg, time_period = 52, batch_size = 1, random_state = None)
+        bsi_obs = SIR_and_BSI_simulator(net_transmission_param, R_param, nt = n_weeks, N = pop_size, bsi_pars = bsi_pars, is_prop = is_p, is_agg = is_agg, time_period = 52, reparam = True, batch_size = 1, random_state = None)
     else:
-        bsi_obs = SIR_and_BSI_simulator(beta, gamma, nt = n_weeks, N = pop_size, bsi_pars = bsi_pars, is_prop = is_p, is_agg = is_agg, time_period = 52, batch_size = 1, random_state = None)
+        bsi_obs = SIR_and_BSI_simulator(beta, gamma, nt = n_weeks, N = pop_size, bsi_pars = bsi_pars, is_prop = is_p, is_agg = is_agg, time_period = 52, reparam = False, batch_size = 1, random_state = None)
 
 #bsi_obs = (aggregate_BSI(bsi_obs, nan_locations), aggregate_BSI(bsi_obs, nan_locations), aggregate_BSI(bsi_obs, nan_locations))
 print(bsi_obs.shape)
@@ -388,12 +385,13 @@ N = elfi.Constant(pop_size)
 is_prop = elfi.Constant(is_p)
 is_agg = elfi.Constant(is_agg)
 time_period = elfi.Constant(52)
+is_reparam = elfi.Constant(reparam)
 
 bsi_pars = elfi.Constant(bsi_pars)
-SIR = elfi.Simulator(SIR_and_BSI_simulator, par1, par2, nt, N, bsi_pars, is_prop, is_agg, time_period, observed = bsi_obs)
+SIR_col = elfi.Simulator(SIR_and_BSI_simulator, par1, par2, nt, N, bsi_pars, is_prop, is_agg, time_period, is_reparam, observed = bsi_obs)
 
-S1 = elfi.Summary(BSI_max_t, SIR)
-S2 = elfi.Summary(BSI_max, SIR)
+S1 = elfi.Summary(BSI_max_t, SIR_col)
+S2 = elfi.Summary(BSI_max, SIR_col)
 #S3 = elfi.Summary(I_var_bsi, SIR)
 
 d = elfi.Distance('euclidean', S1, S2)
@@ -403,9 +401,9 @@ elfi.draw(d)
 elfi.set_client('multiprocessing') # parallellization
 
 ### Simulation ###
-arraypool = elfi.ArrayPool(['par1', 'par2', 'SIR', 'd'], name = figtag, prefix = f"{cwd}/cluster/elfi_output") # saves the simulated output
+arraypool = elfi.ArrayPool(['par1', 'par2', 'SIR', 'd'], name = figtag, prefix = f"elfi_output/") # saves the simulated output
 
-smc = elfi.AdaptiveThresholdSMC(d, batch_size=bs, seed=2, q_threshold=0.995)
+smc = elfi.AdaptiveThresholdSMC(d, batch_size=bs, seed=2, q_threshold=0.995, pool = arraypool)
 smc_samples = smc.sample(n_iters, max_iter=10)
 
 
@@ -422,6 +420,6 @@ if not reparam:
     plt.title("RO = beta/gamma")
     plt.show()
 
-arraypool.save() # save the contents of arraypool
+arraypool.save() # save the contents of arraypool TODO: does not work
 
 print("Done!")

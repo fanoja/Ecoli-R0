@@ -8,6 +8,7 @@ Code for the estimation of R0 for *E. coli* colonisation.
 
 - `doc/`: environment.yml file can be found here
 - `data/`: datasets
+- `cluster/`: for running the model on the command line (or on a computing cluster). In progress
 - The main notebook is `Model 1.ipynb`
 
 ### Other relevant notebooks
@@ -16,5 +17,5 @@ Code for the estimation of R0 for *E. coli* colonisation.
 - `summaries.ipynb`: Testing summaries for ELFI.
 - `diagnostics.ipynb`: Validation and diagnostics related code.
 - `exploratory.ipynb`: Exploratory figures (replicates of previous studies and some original figures also).
-- `SIR models.ipynb`: Notebook with a simple SIR model and least squares estimation (for practice).
-
+- `SIR models.ipynb`: Notebook with a simple SIR model and least squares estimation (for practice). 
+- `reparam SIR.ipynb`: Reparametrized model with net transmission and R as the parameters to estimate.
