@@ -1,4 +1,5 @@
-# Reparametrized SIR
+# Running the model from the command line:
+# python3 <this_file>.py
 
 import numpy as np
 import pandas as pd

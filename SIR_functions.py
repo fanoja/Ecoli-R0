@@ -29,6 +29,7 @@ def plot_SIR(SIR):
     plt.legend(loc = "upper right")
     
     plt.show()
+    
 
 def propSIR_simulator(beta, gamma, nt, N, is_bsi = False, bsi_pars = None, agg_bsi = False, is_prop = True, nan_locations = [], batch_size = 1, random_state = None):
     # SIR model with proportions
