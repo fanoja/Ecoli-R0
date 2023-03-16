@@ -1,3 +1,21 @@
+import numpy as np
+
+def get_obs_BSI(df, clade, cladecol = 'clade', is_prop = True):
+    # Get the proportion of clade out of all observations per year
+    
+    import pandas as pd
+    
+    if 'clade' in df.columns:
+        cladecol = 'clade'
+        
+    if is_prop:
+        theta_BSI_obs = pd.value_counts(df.loc[df[cladecol] == clade]["year"])/pd.value_counts(df["year"])# n clades per year/n all ST131 obs
+    else:
+        theta_BSI_obs = pd.value_counts(df.loc[df[cladecol] == clade]["year"]).sort_index() # these are counts directly
+
+    
+    return theta_BSI_obs.fillna(0) # assume that years with missing obs did not have any BSI cases.
+
 def get_OR_hat_pars(or_data, clade = "A", dataset = "NORM"):
     
     df = or_data[or_data["Label"] == f'{clade} ({dataset})']
@@ -78,7 +96,7 @@ def sum_over_bsi(bsi_obs, time_period = 52):
     
     return agg_bsi
 
-def plot_col_to_BSI(SIR, or_data = or_data, clade = "A", dataset = "NORM", n_rep = 100, theta_c = 1, theta_bsi = 0.3, is_prop = True):
+def plot_col_to_BSI(SIR, or_data, clade = "A", dataset = "NORM", n_rep = 100, theta_c = 1, theta_bsi = 0.3, is_prop = True):
     # Plot n_rep repetitions of theta_BSI_clade as "translated" from colonization by clade of interest.
     
     

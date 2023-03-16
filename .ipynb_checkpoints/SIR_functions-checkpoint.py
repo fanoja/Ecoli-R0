@@ -1,5 +1,6 @@
 # SIR model related functions
 
+import numpy as np
     
 def dS(S, I, t, beta, N, is_prop = False):
     if is_prop:
@@ -46,7 +47,7 @@ def check_SIR_nonneg(comp_t, dcomp):
     return comp_t1
 
 def SIR(par1, par2, nt, N, reparam = False, batch_size=1, random_state = None):
-
+    
     thetaS = np.zeros((batch_size, nt))
     thetaI = np.zeros((batch_size, nt))
     thetaR = np.zeros((batch_size, nt))
