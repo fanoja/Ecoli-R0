@@ -39,7 +39,7 @@ gamma = 0.34
 # ELFI-related simulation parameters
 elfi.new_model()
 
-prior_type = "gamma" # what prior configuration to use for the parameters of interest?
+prior_type = "gamma_normal" # what prior configuration to use for the parameters of interest?
 
 if reparam:
     par1 = elfi.Prior(scipy.stats.uniform,0.01,20)
@@ -47,7 +47,7 @@ if reparam:
 else:
     if prior_type == "gamma_normal":
         par1 = elfi.Prior(scipy.stats.gamma, 1, 0, 1/0.1)
-        par2 = elfi.Prior(scipy.stats.normal, 1/30, 0.01)
+        par2 = elfi.Prior(scipy.stats.norm, 1/30, 0.01)
     elif prior_type == "gamma_constant":
         par1 = elfi.Prior(scipy.stats.gamma, 1, 0, 1/0.1)
         par2 = elfi.Constant(1/30)

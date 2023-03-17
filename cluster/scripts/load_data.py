@@ -34,3 +34,19 @@ norm_age_data = pd.DataFrame(data={"age":ages, "n_BSI":groups})
 
 bsac_data = bsac_data.rename(columns = {'Year_of_isolation':'year', 'MLST':'ST', 'Phylogroup':'clade'})
 norm_data = norm_data.rename(columns = {'CC131_clades':'clade'})
+
+def get_obs_BSI(df, clade, cladecol = 'clade', is_prop = True):
+    # Get the proportion of clade out of all observations per year
+    
+    import pandas as pd
+    
+    if 'clade' in df.columns:
+        cladecol = 'clade'
+        
+    if is_prop:
+        theta_BSI_obs = pd.value_counts(df.loc[df[cladecol] == clade]["year"])/pd.value_counts(df["year"])# n clades per year/n all ST131 obs
+    else:
+        theta_BSI_obs = pd.value_counts(df.loc[df[cladecol] == clade]["year"]).sort_index() # these are counts directly
+
+    
+    return theta_BSI_obs.fillna(0) # assume that years with missing obs did not have any BSI cases.
