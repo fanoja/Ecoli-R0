@@ -1,8 +1,10 @@
-import os
+import os, re
 import pandas as pd
 
 cwd = os.getcwd()
-#cwd = cwd[0:len(cwd) - len("/cluster")] # uncomment if operating in the cluster/ directory
+
+if bool(re.search('cluster', cwd)):
+    cwd = cwd[0:len(cwd) - len("/cluster")] # uncomment if operating in the cluster/ directory
 print(f"Current working directory: {cwd}")
 
 # load NORM data

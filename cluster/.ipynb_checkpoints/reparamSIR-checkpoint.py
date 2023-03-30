@@ -9,12 +9,7 @@ import elfi
 import scipy.stats
 import os
 
-cwd = os.getcwd()
-cwd = cwd[0:len(cwd) - len("/cluster")]
-print(f"Current working directory: {cwd}")
-
 # TODO: reading simulation parameters from the command line to this script
-# TODO: test that this works
 
 ## Simulation options ##
 
@@ -34,7 +29,7 @@ net_transmission_param = 2
 R_param = 5
 
 beta = 0.734
-gamma = 0.34
+gamma = 0.0134
 
 # ELFI-related simulation parameters
 elfi.new_model()
@@ -86,7 +81,7 @@ else:
         
 ## Loading the data ##
 
-from load_data import *
+from scripts.load_data import *
 
 if obs_data == "NORM":
     bsi_obs_data = get_obs_BSI(df = norm_data, clade = clade, is_prop = True)
@@ -104,17 +99,17 @@ print(f'Population size: {pop_size}')
 ## Observational model functions ##
 
 import importlib
-import BSI_functions
+import scripts.BSI_functions
 
-importlib.reload(BSI_functions) # for changes in the file to take effect
+importlib.reload(scripts.BSI_functions) # for changes in the file to take effect
 
-from BSI_functions import * # includes SIR_and_BSI_simulator
+from scripts.BSI_functions import * # includes SIR_and_BSI_simulator
 
 ## SIR (colonisation simulation) functions ##
 
-import SIR_functions
-importlib.reload(SIR_functions)
-from SIR_functions import *
+import scripts.SIR_functions
+importlib.reload(scripts.SIR_functions)
+from scripts.SIR_functions import *
 
 
 ## ELFI functions ###
