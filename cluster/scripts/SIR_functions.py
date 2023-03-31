@@ -47,7 +47,9 @@ def check_SIR_nonneg(comp_t, dcomp):
     return comp_t1
 
 def SIR(par1, par2, nt, N, reparam = False, batch_size=1, random_state = None):
-    
+    par1 = np.atleast_1d(par1)
+    par2 = np.atleast_1d(par2)
+    batch_size = par1.shape[0]
     thetaS = np.zeros((batch_size, nt))
     thetaI = np.zeros((batch_size, nt))
     thetaR = np.zeros((batch_size, nt))

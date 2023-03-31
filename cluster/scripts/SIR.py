@@ -106,7 +106,6 @@ def SIR_simulator(beta, gamma, nt = 104, N = 100000, batch_size = 1, random_stat
     
     print(f'beta:{beta}, gamma:{gamma}')
     #params = {"S0": 100000 - 1, "I0": 1, "R0":0, "times":[i for i in range(0,104)],"timestep":1, "N":100000}
-    
     S = np.zeros((batch_size, nt))
     I = np.zeros((batch_size, nt))
     R = np.zeros((batch_size, nt))

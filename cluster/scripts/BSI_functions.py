@@ -64,7 +64,7 @@ def col_to_BSI(SIR, OR_hat, theta_c = 1, theta_bsi = 0.3, is_prop = True):
     return theta_bsi_a_hat
 
 
-def sum_over_bsi(bsi_obs, time_period = 52):
+def sum_over_bsi(bsi_obs, time_period = 52, batch_size = 1, random_state = None):
     # Take a sum over every ith week in bsi_obs (from i to i + time_period, where i is the current week)
     # Note: probably not applicable for proportion observations, only counts
     # time_period: time period to sum over. By default 52 (weeks).
