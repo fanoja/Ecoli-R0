@@ -118,14 +118,14 @@ def plot_BSI(y_bsi):
 
     
 ### Combining SIR and the observational model (BSI model) ###
-
+import re
 
 def SIR_and_BSI_simulator(par1, par2, nt, N, bsi_pars, is_prop = False, is_agg = False, time_period = 52, reparam = False, batch_size = 1, random_state = None):
     # A simulator function combining both the SIR simulation and the observational model
     
     cwd = os.getcwd()
 
-    if bool(re.search('cluster', cwd)):
+    if bool(re.search('cluster', cwd)): # a hack to get these loaded from the main directory vs from cluster/
         from scripts.SIR_functions import SIR, prop_to_nSIR
     else:
         from cluster.scripts.SIR_functions import SIR, prop_to_nSIR
