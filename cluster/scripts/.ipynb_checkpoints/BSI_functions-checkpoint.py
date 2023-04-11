@@ -1,4 +1,5 @@
 import numpy as np
+import matplotlib.pyplot as plt
 import os
 
 def get_OR_hat_pars(or_data, clade = "A", dataset = "NORM"):
