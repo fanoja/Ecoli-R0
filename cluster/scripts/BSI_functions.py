@@ -38,7 +38,7 @@ def get_OR_hat(or_data, clade = "A", dataset = "NORM", batch_size = 1, random_st
     
     return OR_hats
 
-def col_to_BSI(SIR, OR_hat, theta_c = 1, theta_bsi = 0.3, is_prop = True):
+def col_to_BSI(SIR, OR_hat, theta_c = 1, theta_bsi = 0.3, is_prop = True, batch_size = 1, random_state = None):
     # SIR: output of the SIR simulator (clade of interest colonization proportion over time)
     # theta_bsi: The proportion of bsi in the entire (colonized) population - from the age distribution.
     # theta_c: The overall proportion of population colonized by E. coli. For simplicity, assume we are only interested in the colonized 
@@ -79,6 +79,20 @@ def sum_over_bsi(bsi_obs, time_period = 52, batch_size = 1, random_state = None)
         bsi_obs_yearly = bsi_obs[:,start:end]
         agg_bsi.append(np.sum(bsi_obs_yearly[:,], axis = 1))
     agg_bsi = np.asarray(agg_bsi).transpose()   
+    
+    return agg_bsi
+
+def max_bsi_per_year(bsi_obs, time_period = 52):
+    # Return the maximum number of BSI cases per year
+    
+    n_years = len(bsi_obs[0])//52
+    agg_bsi = []
+    
+    for i in range(0, n_years):
+        start = i*time_period # which week to start summing at
+        end = time_period*i + time_period # next week
+        agg_bsi.append(np.max(bsi_obs[:,start:end], axis = 1))
+    agg_bsi = np.asarray(agg_bsi).transpose()  
     
     return agg_bsi
 
@@ -151,8 +165,9 @@ def SIR_and_BSI_simulator(par1, par2, nt, N, bsi_pars, is_prop = False, is_agg =
     BSI = col_to_BSI(SIRsim, or_hat, theta_c = theta_c, theta_bsi = theta_bsi, is_prop = is_prop)
     
     if is_agg:
-        BSI = sum_over_bsi(BSI, time_period = time_period)
-
+        #BSI = sum_over_bsi(BSI, time_period = time_period)
+        BSI = max_bsi_per_year(BSI, time_period = 52)
+        
     return BSI
 
 
