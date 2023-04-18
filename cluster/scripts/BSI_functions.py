@@ -38,7 +38,7 @@ def get_OR_hat(or_data, clade = "A", dataset = "NORM", batch_size = 1, random_st
     
     return OR_hats
 
-def col_to_BSI(SIR, OR_hat, theta_c = 1, theta_bsi = 0.3, is_prop = True, batch_size = 1, random_state = None):
+def col_to_BSI(SIR, OR_hat, theta_c = 1, theta_bsi = 0.3, is_prop = True, batch_size = 1, random_state = None, weekly = True):
     # SIR: output of the SIR simulator (clade of interest colonization proportion over time)
     # theta_bsi: The proportion of bsi in the entire (colonized) population - from the age distribution.
     # theta_c: The overall proportion of population colonized by E. coli. For simplicity, assume we are only interested in the colonized 
@@ -60,6 +60,9 @@ def col_to_BSI(SIR, OR_hat, theta_c = 1, theta_bsi = 0.3, is_prop = True, batch_
 
     theta_c_0 = theta_c - theta_c_a
 
+    if weekly:
+        theta_bsi = theta_bsi/52
+        
     theta_bsi_a_hat = OR_hat.reshape(-1,1)*theta_c_a*theta_bsi/(theta_c_0 + OR_hat.reshape(-1,1)*theta_c_a)
     
     return theta_bsi_a_hat
