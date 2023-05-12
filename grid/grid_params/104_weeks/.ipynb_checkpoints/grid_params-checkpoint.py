@@ -1,0 +1,16 @@
+pop_size = 5000000
+n_weeks = 104
+clade = "A"
+obs_data = "NORM"
+true_par1 = 0.357
+true_par2 = 0.055
+theta_c = 1
+theta_bsi = 0.001
+is_prop = True
+reparam = False
+is_agg = False
+time_period = 52
+random_state = None
+batch_size = 1
+r_id = "synt_104w" # id to be added to the name of the figures/saved distance matrices
+n_grid = 250 # number of parameter pairs to simulate
