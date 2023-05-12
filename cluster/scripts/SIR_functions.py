@@ -66,7 +66,7 @@ def SIR(par1, par2, nt, N, reparam = False, batch_size=1, random_state = None):
     N = np.array([N]*nt)
     
     if reparam:
-        a = par1/(1 - 1/par2)
+        a = par1/(1 - 1/par2) # par1 = net transmission, par2 = R
         b = par1/(par2 - 1)
     else:
         a = par1

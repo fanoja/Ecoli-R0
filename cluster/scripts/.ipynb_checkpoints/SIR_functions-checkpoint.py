@@ -48,6 +48,9 @@ def check_SIR_nonneg(comp_t, dcomp):
 
 def SIR(par1, par2, nt, N, reparam = False, batch_size=1, random_state = None):
     
+    par1 = np.atleast_1d(par1)
+    par2 = np.atleast_1d(par2)
+    batch_size = par1.shape[0]
     thetaS = np.zeros((batch_size, nt))
     thetaI = np.zeros((batch_size, nt))
     thetaR = np.zeros((batch_size, nt))
@@ -87,3 +90,37 @@ def prop_to_nSIR(SIR, N):
     R = SIR[2]
     
     return S[:,]*N, I[:,]*N, R[:,]*N
+
+
+
+# ELFI related functions
+
+# Distance metrics
+
+def I_mean(y):
+    #print(y)
+    #print(y[1])
+    return np.mean(y[1][:,], axis=1)
+
+def I_var(y):
+    return np.var(y[1][:,], axis=1)
+
+def I_max(y):
+    return np.max(y[1][:,], axis = 1)
+
+def S_min(y):
+    return np.min(y[0][:,], axis=1)
+
+def R_max(y):
+    return np.max(y[2][:,], axis=1)
+
+def I_max_bsi(y):
+    I_max = np.max(y[:,], axis = 1)
+    return I_max#.reshape(-1,1)
+
+def I_mean_bsi(y):
+    I_mean = np.mean(y[:,], axis = 1)
+    return I_mean#.reshape(-1,1)
+
+def I_var_bsi(y):
+    return np.var(y[:,], axis = 1)#.reshape(-1,1)

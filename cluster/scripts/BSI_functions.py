@@ -38,7 +38,7 @@ def get_OR_hat(or_data, clade = "A", dataset = "NORM", batch_size = 1, random_st
     
     return OR_hats
 
-def col_to_BSI(SIR, OR_hat, theta_c = 1, theta_bsi = 0.001, is_prop = True, batch_size = 1, random_state = None, weekly = True):
+def col_to_BSI(SIR, OR_hat, theta_c = 1, theta_bsi = 0.001, is_prop = True, batch_size = 1, random_state = None):
     # SIR: output of the SIR simulator (clade of interest colonization proportion over time)
     # theta_bsi: The proportion of bsi in the entire (colonized) population - from the age distribution.
     # theta_c: The overall proportion of population colonized by E. coli. For simplicity, assume we are only interested in the colonized 
@@ -60,8 +60,8 @@ def col_to_BSI(SIR, OR_hat, theta_c = 1, theta_bsi = 0.001, is_prop = True, batc
 
     theta_c_0 = theta_c - theta_c_a
 
-    if weekly:
-        theta_bsi = theta_bsi/52
+    #if is_agg:
+        #theta_bsi = theta_bsi/52
         
     theta_bsi_a_hat = OR_hat.reshape(-1,1)*theta_c_a*theta_bsi/(theta_c_0 + OR_hat.reshape(-1,1)*theta_c_a)
     
@@ -117,7 +117,7 @@ def plot_col_to_BSI(SIR, or_data, clade = "A", dataset = "NORM", n_rep = 100, th
     plt.plot(np.mean(all_bsi_reps, axis = 0)[0], color = "navy", label = "Mean of BSI reps")
     plt.xlabel("Years")
     if is_prop:
-        plt.title(f"Proportion of BSI: Clade {clade}, {dataset}")
+        plt.title(f"Proportion of BSI and col: Clade {clade}, {dataset}\n theta_c = {theta_c}, theta_bsi = {theta_bsi}")
         plt.ylabel("Proportion")
     else:
         plt.title(f"Number of BSI cases: Clade {clade}, {dataset}")
@@ -192,3 +192,17 @@ def plot_SIR_and_BSI(y, OR_hat):
     plt.legend(loc = 'upper right')
     plt.show()
     
+## Summaries ##
+
+def BSI_max_t(y):
+    # time to peak/maximum number of bsi cases
+    
+    return np.argmax(y)
+
+def BSI_max(y):
+    # maximum number of BSI cases
+    
+    max_bsi = np.max(y)
+    
+    return max_bsi#.reshape(-1,1).transpose()
+

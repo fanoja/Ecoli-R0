@@ -38,7 +38,7 @@ def get_OR_hat(or_data, clade = "A", dataset = "NORM", batch_size = 1, random_st
     
     return OR_hats
 
-def col_to_BSI(SIR, OR_hat, theta_c = 1, theta_bsi = 0.3, is_prop = True):
+def col_to_BSI(SIR, OR_hat, theta_c = 1, theta_bsi = 0.001, is_prop = True, batch_size = 1, random_state = None):
     # SIR: output of the SIR simulator (clade of interest colonization proportion over time)
     # theta_bsi: The proportion of bsi in the entire (colonized) population - from the age distribution.
     # theta_c: The overall proportion of population colonized by E. coli. For simplicity, assume we are only interested in the colonized 
@@ -60,12 +60,15 @@ def col_to_BSI(SIR, OR_hat, theta_c = 1, theta_bsi = 0.3, is_prop = True):
 
     theta_c_0 = theta_c - theta_c_a
 
+    #if is_agg:
+        #theta_bsi = theta_bsi/52
+        
     theta_bsi_a_hat = OR_hat.reshape(-1,1)*theta_c_a*theta_bsi/(theta_c_0 + OR_hat.reshape(-1,1)*theta_c_a)
     
     return theta_bsi_a_hat
 
 
-def sum_over_bsi(bsi_obs, time_period = 52):
+def sum_over_bsi(bsi_obs, time_period = 52, batch_size = 1, random_state = None):
     # Take a sum over every ith week in bsi_obs (from i to i + time_period, where i is the current week)
     # Note: probably not applicable for proportion observations, only counts
     # time_period: time period to sum over. By default 52 (weeks).
@@ -79,6 +82,20 @@ def sum_over_bsi(bsi_obs, time_period = 52):
         bsi_obs_yearly = bsi_obs[:,start:end]
         agg_bsi.append(np.sum(bsi_obs_yearly[:,], axis = 1))
     agg_bsi = np.asarray(agg_bsi).transpose()   
+    
+    return agg_bsi
+
+def max_bsi_per_year(bsi_obs, time_period = 52):
+    # Return the maximum number of BSI cases per year
+    
+    n_years = len(bsi_obs[0])//52
+    agg_bsi = []
+    
+    for i in range(0, n_years):
+        start = i*time_period # which week to start summing at
+        end = time_period*i + time_period # next week
+        agg_bsi.append(np.max(bsi_obs[:,start:end], axis = 1))
+    agg_bsi = np.asarray(agg_bsi).transpose()  
     
     return agg_bsi
 
@@ -100,7 +117,7 @@ def plot_col_to_BSI(SIR, or_data, clade = "A", dataset = "NORM", n_rep = 100, th
     plt.plot(np.mean(all_bsi_reps, axis = 0)[0], color = "navy", label = "Mean of BSI reps")
     plt.xlabel("Years")
     if is_prop:
-        plt.title(f"Proportion of BSI: Clade {clade}, {dataset}")
+        plt.title(f"Proportion of BSI and col: Clade {clade}, {dataset}\n theta_c = {theta_c}, theta_bsi = {theta_bsi}")
         plt.ylabel("Proportion")
     else:
         plt.title(f"Number of BSI cases: Clade {clade}, {dataset}")
@@ -152,7 +169,8 @@ def SIR_and_BSI_simulator(par1, par2, nt, N, bsi_pars, is_prop = False, is_agg =
     
     if is_agg:
         BSI = sum_over_bsi(BSI, time_period = time_period)
-
+        #BSI = max_bsi_per_year(BSI, time_period = 52)
+        
     return BSI
 
 
@@ -174,3 +192,17 @@ def plot_SIR_and_BSI(y, OR_hat):
     plt.legend(loc = 'upper right')
     plt.show()
     
+## Summaries ##
+
+def BSI_max_t(y):
+    # time to peak/maximum number of bsi cases
+    
+    return np.argmax(y)
+
+def BSI_max(y):
+    # maximum number of BSI cases
+    
+    max_bsi = np.max(y)
+    
+    return max_bsi#.reshape(-1,1).transpose()
+
