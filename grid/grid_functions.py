@@ -136,6 +136,7 @@ def scatter_distance_points(betas, gammas, dists, true_beta = None, true_gamma =
     sc = plt.scatter(betas, gammas, c = dists, s = 1)
     if true_gamma != None and true_beta != None:
         plt.scatter(true_beta, true_gamma, c= "red", marker = "X")
+        
     plt.xlabel(xlab)
     plt.ylabel(ylab)
     plt.colorbar(sc)
