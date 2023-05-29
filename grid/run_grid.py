@@ -2,6 +2,10 @@ import numpy as np
 import matplotlib.pyplot as plt
 import importlib
 import datetime
+import os
+
+print(os.getcwd())
+os.chdir('/u/50/ojalaf2/unix/Dropbox (Aalto)/Ecoli/')
 
 from cluster.scripts.load_data import * # import data: odds ratios, BSI...
 import cluster.scripts.BSI_functions
@@ -10,6 +14,8 @@ importlib.reload(cluster.scripts.BSI_functions) # for changes to take effect
 from cluster.scripts.BSI_functions import *
 
 res_root = "res/"
+use_incidence = True # Change to False if you wish to use the proportion of isolates instead
+
 # Read simulation variables from a file
 
 import grid_params
@@ -46,10 +52,14 @@ if true_par1 != None:
     
 else: # Use real data
     print(f"Using real data. Dataset: {obs_data}, clade: {clade}")
-    if obs_data == "NORM":
-        bsi_obs = get_obs_BSI(df = norm_data, clade = clade, is_prop = is_prop)
+    
+    if use_incidence:
+        bsi_obs = get_incidence_data("data/NORM_incidence.csv", clade = clade, is_prop = is_prop, n_incidence_pop = pop_size)
     else:
-        bsi_obs = get_obs_BSI(df = bsac_data, clade = clade, is_prop = is_prop)
+        if obs_data == "NORM":
+            bsi_obs = get_obs_BSI(df = norm_data, clade = clade, is_prop = is_prop)
+        else:
+            bsi_obs = get_obs_BSI(df = bsac_data, clade = clade, is_prop = is_prop)
 
     plt.plot(bsi_obs)
     plt.title(f"Real BSI clade: {clade}, dataset: {obs_data}")
@@ -63,12 +73,13 @@ if reparam:
 else:
     pairs = get_valid_beta_gamma_pairs(n_grid, n_grid)
     
-dists = get_distance_points(pairs, bsi_obs, sim_pars, [BSI_max, BSI_max_t])
+dists, summary_dists = get_distance_points(pairs, bsi_obs, sim_pars, [BSI_max, BSI_max_t])
 
 # Save dists and pairs
 
 np.save(res_root + "pairs" + "_" + res_id + ".npy", pairs)
 np.save(res_root + "dists" + "_" + res_id + ".npy", dists)
+np.save(res_root + "summary_dists" + "_" + res_id + ".npy", dists)
 
 # Most of the visualization of 'dists' is done in a notebook given how many manual tweaks the figures might need (tolerance etc).
 

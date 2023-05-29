@@ -126,7 +126,7 @@ def get_distance_points(pairs, bsi_obs, sim_pars, summaries):
     dists = np.sqrt(dists)
         
         
-    return dists
+    return dists, summary_dists
   
 
 ## Visualization ##

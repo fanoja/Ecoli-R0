@@ -1,5 +1,5 @@
-pop_size = 5000000
-n_weeks = 16*52
+pop_size = 1000000
+n_weeks = 14*52
 clade = "A"
 obs_data = "NORM"
 true_par1 = None
@@ -12,5 +12,5 @@ is_agg = True
 time_period = 52
 random_state = None
 batch_size = 1
-r_id = "obs_16y" # id to be added to the name of the figures/saved distance matrices
+r_id = "obs_14y_incidence" # id to be added to the name of the figures/saved distance matrices
 n_grid = 250 # number of parameter pairs to simulate
