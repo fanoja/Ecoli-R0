@@ -38,7 +38,7 @@ bsac_data = bsac_data.rename(columns = {'Year_of_isolation':'year', 'MLST':'ST',
 norm_data = norm_data.rename(columns = {'CC131_clades':'clade'})
 
 def get_obs_BSI(df, clade, cladecol = 'clade', is_prop = True):
-    # Get the proportion of clade out of all observations per year
+    # Get the proportion of a clade out of all ST131 observations per year
     
     import pandas as pd
     
@@ -52,3 +52,23 @@ def get_obs_BSI(df, clade, cladecol = 'clade', is_prop = True):
 
     
     return theta_BSI_obs.fillna(0) # assume that years with missing obs did not have any BSI cases.
+
+def get_incidence_data(csv_file, clade = "A", is_prop = True, n_incidence_pop = 1000000):
+    # Get the BSI clade X incidence per 1000000 people.
+    # If is_prop = True, divides the incidence by n_incidence_pop
+    
+    import pandas as pd
+
+    csv_file = 'data/NORM_incidence.csv'
+    df = pd.read_csv(csv_file, delimiter=',')
+    
+    rnames = df["Year"]
+    
+    df = df[clade]
+    
+    if is_prop:
+        df = df/n_incidence_pop
+     
+    df.index = rnames
+    
+    return df
