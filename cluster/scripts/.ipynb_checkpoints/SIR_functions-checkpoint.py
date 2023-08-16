@@ -46,7 +46,7 @@ def check_SIR_nonneg(comp_t, dcomp):
     
     return comp_t1
 
-def SIR(par1, par2, nt, N, reparam = False, batch_size=1, random_state = None):
+def SIR(par1, par2, nt, N, I0 = None, reparam = False, batch_size=1, random_state = None):
     
     par1 = np.atleast_1d(par1)
     par2 = np.atleast_1d(par2)
@@ -55,8 +55,13 @@ def SIR(par1, par2, nt, N, reparam = False, batch_size=1, random_state = None):
     thetaI = np.zeros((batch_size, nt))
     thetaR = np.zeros((batch_size, nt))
     
-    thetaS[:,0] = N-1
-    thetaI[:,0] = 1
+    if I0 == None:
+        thetaS[:,0] = N-1
+        thetaI[:,0] = 1
+    else:
+        thetaI[:,0] = I0
+        thetaS[:,0] = N - I0
+    
     thetaR[:,0] = 0
     
     thetaS[:,0] = thetaS[:,0]/N # recommendation: make S0 the same as N - I0
@@ -66,7 +71,7 @@ def SIR(par1, par2, nt, N, reparam = False, batch_size=1, random_state = None):
     N = np.array([N]*nt)
     
     if reparam:
-        a = par1/(1 - 1/par2)
+        a = par1/(1 - 1/par2) # par1 = net transmission, par2 = R
         b = par1/(par2 - 1)
     else:
         a = par1

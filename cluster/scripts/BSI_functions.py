@@ -162,7 +162,6 @@ def SIR_and_BSI_simulator(par1, par2, nt, N, bsi_pars, I0 = None, is_prop = Fals
     theta_c = bsi_pars["theta_c"]
     theta_bsi = bsi_pars["theta_bsi"]
     
-    
     or_hat = get_OR_hat(or_data, clade, dataset, batch_size = batch_size, random_state = random_state)
     
     BSI = col_to_BSI(SIRsim, or_hat, theta_c = theta_c, theta_bsi = theta_bsi, is_prop = is_prop)

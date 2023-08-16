@@ -81,7 +81,7 @@ def get_nt_R_pairs(n_nt, n_R, nt_range = [0.01,20], R_range = [1.5,8]):
             
     return pairs
 
-
+#par1, par2, nt, N, bsi_pars, I0 = None, is_prop = False, is_agg = False, time_period = 52, reparam = False, batch_size = 1, random_state = None
 def get_distance_points(pairs, bsi_obs, sim_pars, summaries):
     # Calculates distances between given pairs of gamma, beta parameters for the summaries of interest
     # pairs: matrix of size (n_gamma*n_beta,2), where the first column holds the gamma values and the 2nd column has the beta values
@@ -102,9 +102,9 @@ def get_distance_points(pairs, bsi_obs, sim_pars, summaries):
         
         # simulate a sequence
         
-        sim_seq = SIR_and_BSI_simulator(par1, par2, sim_pars["n_weeks"], sim_pars["pop_size"], sim_pars["bsi_pars"],\
-                                      sim_pars["is_prop"], sim_pars["is_agg"], sim_pars["time_period"], sim_pars["reparam"],\
-                                      sim_pars["batch_size"], sim_pars["random_state"])[0]
+        sim_seq = SIR_and_BSI_simulator(par1 = par1, par2 = par2, nt = sim_pars["n_weeks"], N = sim_pars["pop_size"], bsi_pars = sim_pars["bsi_pars"],\
+                                        I0 = sim_pars["I0"], is_prop = sim_pars["is_prop"], is_agg = sim_pars["is_agg"], time_period = sim_pars["time_period"],\
+                                        reparam = sim_pars["reparam"], batch_size = sim_pars["batch_size"], random_state = sim_pars["random_state"])[0]
         
         k = 0
         for summary in summaries:

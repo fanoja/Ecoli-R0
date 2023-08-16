@@ -5,7 +5,9 @@ import datetime
 import os
 
 print(os.getcwd())
-os.chdir('/u/50/ojalaf2/unix/Dropbox (Aalto)/Ecoli/')
+os.chdir('/u/50/ojalaf2/unix/Dropbox (Aalto)/Ecoli')
+print(os.getcwd())
+
 
 from cluster.scripts.load_data import * # import data: odds ratios, BSI...
 import cluster.scripts.BSI_functions
@@ -50,6 +52,8 @@ if true_par1 != None:
     plt.savefig(res_root + "synthetic_BSI_obs_" + res_id + ".pdf", format="pdf", bbox_inches="tight")
     #plt.show()
     
+    theta_bsi_a_0 = bsi_obs[0][0]
+    
 else: # Use real data
     print(f"Using real data. Dataset: {obs_data}, clade: {clade}")
     
@@ -65,6 +69,11 @@ else: # Use real data
     plt.title(f"Real BSI clade: {clade}, dataset: {obs_data}")
     plt.savefig(res_root + "real_BSI_obs_" + res_id + ".pdf", format="pdf", bbox_inches="tight")
     
+    theta_bsi_a_0 = bsi_obs.iloc[0]
+
+## TODO: implement I0 fix here. ##
+or_hat = get_OR_hat(bsi_pars["or_data"], clade = bsi_pars["clade"], dataset = bsi_pars["dataset"], batch_size = sim_pars["batch_size"], random_state = sim_pars["random_state"])[0]
+I0 = theta_bsi_a_0*bsi_pars["theta_c"]/(theta_bsi_a_0 + or_hat*bsi_pars["theta_bsi"] - theta_bsi_a_0*or_hat)
 
 # Run the simulation
 

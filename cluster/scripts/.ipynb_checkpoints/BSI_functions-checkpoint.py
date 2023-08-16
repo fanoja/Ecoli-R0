@@ -138,7 +138,7 @@ def plot_BSI(y_bsi):
 ### Combining SIR and the observational model (BSI model) ###
 import re
 
-def SIR_and_BSI_simulator(par1, par2, nt, N, bsi_pars, is_prop = False, is_agg = False, time_period = 52, reparam = False, batch_size = 1, random_state = None):
+def SIR_and_BSI_simulator(par1, par2, nt, N, bsi_pars, I0 = None, is_prop = False, is_agg = False, time_period = 52, reparam = False, batch_size = 1, random_state = None):
     # A simulator function combining both the SIR simulation and the observational model
     
     cwd = os.getcwd()
@@ -149,7 +149,7 @@ def SIR_and_BSI_simulator(par1, par2, nt, N, bsi_pars, is_prop = False, is_agg =
         from cluster.scripts.SIR_functions import SIR, prop_to_nSIR
     
     # SIR simulator:
-    SIRsim = SIR(par1, par2, nt = nt, N = N, reparam = reparam, batch_size = batch_size, random_state = random_state)
+    SIRsim = SIR(par1, par2, nt = nt, N = N, I0 = I0, reparam = reparam, batch_size = batch_size, random_state = random_state)
     
     if not is_prop:
         SIRsim = prop_to_nSIR(SIR, N)
@@ -161,7 +161,6 @@ def SIR_and_BSI_simulator(par1, par2, nt, N, bsi_pars, is_prop = False, is_agg =
     dataset = bsi_pars["dataset"]
     theta_c = bsi_pars["theta_c"]
     theta_bsi = bsi_pars["theta_bsi"]
-    
     
     or_hat = get_OR_hat(or_data, clade, dataset, batch_size = batch_size, random_state = random_state)
     
