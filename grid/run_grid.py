@@ -71,9 +71,13 @@ else: # Use real data
     
     theta_bsi_a_0 = bsi_obs.iloc[0]
 
-## TODO: implement I0 fix here. ##
+## Choose a value for I0: ##
+theta_bsi_a_0 = theta_bsi_a_0/pop_size # note! Incidence data! Need to divide by the population size to get theta_bsi_a!
 or_hat = get_OR_hat(bsi_pars["or_data"], clade = bsi_pars["clade"], dataset = bsi_pars["dataset"], batch_size = sim_pars["batch_size"], random_state = sim_pars["random_state"])[0]
-I0 = theta_bsi_a_0*bsi_pars["theta_c"]/(theta_bsi_a_0 + or_hat*bsi_pars["theta_bsi"] - theta_bsi_a_0*or_hat)
+I0 = (theta_bsi_a_0*bsi_pars["theta_c"]/(theta_bsi_a_0 + or_hat*bsi_pars["theta_bsi"] - theta_bsi_a_0*or_hat))*sim_pars["pop_size"] # this should be in individuals, not proportions!
+print(f"I0 is {I0}")
+sim_pars["I0"] = I0
+
 
 # Run the simulation
 

@@ -28,8 +28,8 @@ def get_OR_hat(or_data, clade = "A", dataset = "NORM", batch_size = 1, random_st
             if i == max_iter:
                 break
 
-        if i > 0:
-            print(f"Iterated OR_hat {i} times due to negativity.")
+        #if i > 0:
+            #print(f"Iterated OR_hat {i} times due to negativity.")
 
         if OR_hat < 0:
             print(f"Warning, negative OR_hat after max iterations!")
@@ -137,8 +137,9 @@ def plot_BSI(y_bsi):
     
 ### Combining SIR and the observational model (BSI model) ###
 import re
+from cluster.scripts.load_data import *
 
-def SIR_and_BSI_simulator(par1, par2, nt, N, bsi_pars, I0 = None, is_prop = False, is_agg = False, time_period = 52, reparam = False, batch_size = 1, random_state = None):
+def SIR_and_BSI_simulator(par1, par2, nt, N, bsi_pars, is_prop = False, is_agg = False, time_period = 52, reparam = False, batch_size = 1, random_state = None):
     # A simulator function combining both the SIR simulation and the observational model
     
     cwd = os.getcwd()
@@ -147,14 +148,7 @@ def SIR_and_BSI_simulator(par1, par2, nt, N, bsi_pars, I0 = None, is_prop = Fals
         from scripts.SIR_functions import SIR, prop_to_nSIR
     else:
         from cluster.scripts.SIR_functions import SIR, prop_to_nSIR
-    
-    # SIR simulator:
-    SIRsim = SIR(par1, par2, nt = nt, N = N, I0 = I0, reparam = reparam, batch_size = batch_size, random_state = random_state)
-    
-    if not is_prop:
-        SIRsim = prop_to_nSIR(SIR, N)
-        
-    # Observational model:
+
     
     or_data = bsi_pars["or_data"]
     clade = bsi_pars["clade"]
@@ -162,7 +156,30 @@ def SIR_and_BSI_simulator(par1, par2, nt, N, bsi_pars, I0 = None, is_prop = Fals
     theta_c = bsi_pars["theta_c"]
     theta_bsi = bsi_pars["theta_bsi"]
     
-    or_hat = get_OR_hat(or_data, clade, dataset, batch_size = batch_size, random_state = random_state)
+    # Find I0:
+    if dataset == "NORM":
+        bsi_obs = get_incidence_data("data/NORM_incidence.csv", clade = clade, is_prop = is_prop, n_incidence_pop = N)
+    else:
+        bsi_obs = get_obs_BSI(df = bsac_data, clade = clade, is_prop = is_prop)
+        
+    theta_bsi_a_0 = bsi_obs.iloc[0]/N # note! Incidence data! Need to divide by the population size to get theta_bsi_a!
+    or_hat = get_OR_hat(or_data = or_data, clade = clade, dataset = dataset, batch_size = batch_size, random_state = random_state)
+    I0 = (theta_bsi_a_0*theta_c/(theta_bsi_a_0 + or_hat[0]*theta_bsi - theta_bsi_a_0*or_hat[0]))*N # this should be in individuals, not proportions!
+    #print(f"I0 is {I0}")
+    #sim_pars["I0"] = I0
+    
+    # SIR simulator:
+    
+    SIRsim = SIR(par1, par2, nt = nt, N = N, I0 = I0, reparam = reparam, batch_size = batch_size, random_state = random_state)
+    
+    if not is_prop:
+        SIRsim = prop_to_nSIR(SIR, N)
+        
+    # Observational model:
+    
+
+    
+    #or_hat = get_OR_hat(or_data, clade, dataset, batch_size = batch_size, random_state = random_state)
     
     BSI = col_to_BSI(SIRsim, or_hat, theta_c = theta_c, theta_bsi = theta_bsi, is_prop = is_prop)
     
