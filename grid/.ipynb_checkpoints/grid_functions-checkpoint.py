@@ -103,7 +103,7 @@ def get_distance_points(pairs, bsi_obs, sim_pars, summaries):
         # simulate a sequence
         
         sim_seq = SIR_and_BSI_simulator(par1 = par1, par2 = par2, nt = sim_pars["n_weeks"], N = sim_pars["pop_size"], bsi_pars = sim_pars["bsi_pars"],\
-                                        I0 = sim_pars["I0"], is_prop = sim_pars["is_prop"], is_agg = sim_pars["is_agg"], time_period = sim_pars["time_period"],\
+                                        is_prop = sim_pars["is_prop"], is_agg = sim_pars["is_agg"], time_period = sim_pars["time_period"],\
                                         reparam = sim_pars["reparam"], batch_size = sim_pars["batch_size"], random_state = sim_pars["random_state"])[0]
         
         k = 0
@@ -141,7 +141,7 @@ def scatter_distance_points(betas, gammas, dists, true_beta = None, true_gamma =
     plt.ylabel(ylab)
     plt.colorbar(sc)
     sc.set_cmap('viridis') # 'plasma'
-    #sc.set_clim(cutoff_lower, cutoff_upper)
+    sc.set_clim(cutoff_lower, cutoff_upper)
     if save:
         plt.savefig(filename, format="pdf", bbox_inches="tight")
     plt.show()
