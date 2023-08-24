@@ -131,6 +131,30 @@ def get_distance_points(pairs, bsi_obs, sim_pars, summaries):
 
 ## Visualization ##
 
+def read_sim_pars(filepath):
+    # Reads simulation parameters from a text file into a dictionary. 
+    # Why: for visualization and rerunning a specific simulation
+    import ast
+    
+    print("Results to visualize: " + os.path.join(filepath, "sim_params.txt"))
+    with open(os.path.join(filepath, "sim_params.txt"), "r") as f:
+        lines = f.readlines()
+        sim_pars = {}
+        for line in lines:
+            parts = line.strip().split(': ')
+            try:
+                if parts[0] in ["theta_c", "theta_bsi"]:
+                    sim_pars[parts[0]] = float(parts[1])
+                else:
+                    sim_pars[parts[0]] = int(parts[1])
+            except ValueError:
+                if parts[1] in ["True", "False", "None"]:
+                    sim_pars[parts[0]] = ast.literal_eval(parts[1])
+                else:
+                    sim_pars[parts[0]] = parts[1]
+        
+    return sim_pars
+
 def scatter_distance_points(betas, gammas, dists, true_beta = None, true_gamma = None, ylab = "Gamma", xlab = "Beta", cutoff_upper = 1, cutoff_lower = 0, save = False, filename = "no_name"):
     
     sc = plt.scatter(betas, gammas, c = dists, s = 1)
@@ -162,6 +186,133 @@ def plot_histograms(dists, betas, gammas, eps, par1_label = "Beta", par2_label =
     if save:
         plt.savefig(filename, format="pdf", bbox_inches="tight")
     plt.show()
+    
+# Functions for visualizing observed and simulated data:
+
+
+def plot_observed_and_simulated_seq(bsi_obs_data, dists, pairs, eps):
+    # Simulate based on the beta and gamma parameters - simulate more than one potential colonization to quantify uncertainty:
+
+    # The same indices, however, draws from a uniform distribution over the potential BSI curves (for example, from min(beta) to max(beta)),
+    # does not take into account the normal distribution of the parameters
+    acc_pairs = pairs[np.where(dists< eps)[0],:]
+    n_reps = 100
+    indx = np.random.choice(np.arange(1,len(acc_pairs[:,0])), size = n_reps) # pairs to choose from
+
+    par1s = acc_pairs[indx, 0]
+    par2s = acc_pairs[indx, 1]
+
+    mean_simseq = SIR_and_BSI_simulator(par1 = np.mean(pairs[np.where(dists< eps)[0],0]),\
+                                        par2 = np.mean(pairs[np.where(dists < eps)[0],1]),\
+                                        nt = sim_pars["n_weeks"], N = sim_pars["pop_size"],\
+                                        bsi_pars = bsi_pars,\
+                                        is_prop = sim_pars["is_prop"],\
+                                        is_agg = sim_pars["is_agg"],\
+                                        time_period = sim_pars["time_period"],\
+                                        reparam = sim_pars["reparam"],\
+                                        batch_size = sim_pars["batch_size"],\
+                                        random_state = sim_pars["random_state"])
+    
+    median_simseq = SIR_and_BSI_simulator(par1 = np.median(pairs[np.where(dists< eps)[0],0]),\
+                                          par2 = np.median(pairs[np.where(dists < eps)[0],1]),\
+                                          nt = sim_pars["n_weeks"], N = sim_pars["pop_size"],\
+                                          bsi_pars = bsi_pars, is_prop = sim_pars["is_prop"],\
+                                          is_agg = sim_pars["is_agg"],\
+                                          time_period = sim_pars["time_period"],\
+                                          reparam = sim_pars["reparam"], batch_size = sim_pars["batch_size"],\
+                                          random_state = sim_pars["random_state"])
+
+    for i in range(0,n_reps):
+        simseq = SIR_and_BSI_simulator(par1 = par1s[i], par2 = par2s[i],\
+                                       nt = sim_pars["n_weeks"], N = sim_pars["pop_size"],\
+                                       bsi_pars = bsi_pars, is_prop = sim_pars["is_prop"],\
+                                       is_agg = sim_pars["is_agg"],\
+                                       time_period = sim_pars["time_period"],\
+                                       reparam = sim_pars["reparam"], batch_size = sim_pars["batch_size"],\
+                                       random_state = sim_pars["random_state"])
+
+        plt.plot(simseq[0], color = "lightblue") # jos kerron sadalla, osuu tuohon yhteen piikkiin sentään.
+
+    plt.plot(mean_simseq[0], label = "Simulated mean BSI", color = "blue")
+    plt.plot(median_simseq[0], label = "Simulated median BSI", color = "violet")
+    plt.plot(np.array(bsi_obs_data), label = "True BSI", color = "orange")
+    plt.legend()
+    plt.title(f"Simulated and observed BSI, clade {clade}")
+    plt.savefig(os.path.join(output_directory, "sim_and_obs_BSI.pdf"), format="pdf", bbox_inches="tight")
+    plt.xlabel("Year")
+    plt.ylabel("Proportion of population")
+    plt.show()
+    
+def visualize_results(output_directory, eps):
+    # Create all relevevant visualizations and save to output_directory
+    # Give a directory to visualize results from and a tolerance value.
+    # Save resulting figures in this directory.
+    
+    # Read the specific simulation parameters from file into a dictionary:
+    
+    from cluster.scripts.load_data import * # import data: odds ratios, BSI... # Assuming that data has been loaded!
+    
+    sim_pars = read_sim_pars(output_directory)
+    
+    if sim_pars["dataset"] == "NORM":
+        bsi_obs_data = get_incidence_data("data/NORM_incidence.csv", clade = sim_pars["clade"],\
+                                      is_prop = sim_pars["is_prop"],\
+                                      n_incidence_pop = sim_pars["pop_size"])
+    else:
+        bsi_obs_data = get_obs_BSI(df = bsac_data, clade = sim_pars["clade"], is_prop = sim_pars["is_prop"])
+
+    
+    # Load distance matrix and the parameter pairs:
+    
+    dists = np.load(os.path.join(output_directory, "dists.npy"))
+    pairs = np.load(os.path.join(output_directory, "pairs.npy"))
+
+    
+    ## Distance histogram
+    
+    plt.hist(dists)
+    plt.title("Distance")
+    plt.savefig(os.path.join(output_directory, "dist_histogram.pdf"))
+    plt.show()
+    
+    ## Parameter histograms
+                
+    print(f"Beta mean: {np.mean(pairs[np.where(dists< eps)[0],0])}")
+    print(f"Gamma mean: {np.mean(pairs[np.where(dists < eps)[0],1])}")
+    print(f"R = beta mean/gamma mean: {np.mean(pairs[np.where(dists < eps)[0],0])/np.mean(pairs[np.where(dists < eps)[0],1])}")
+    #print(f"True parameters (for synthetic data): beta = {true_par1}, gamma = {true_par2}")
+                
+    plot_histograms(dists, pairs[:,0], pairs[:,1], eps, save = True,\
+                    filename = os.path.join(output_directory, "param_histograms.pdf"))
+
+    
+    ## Observed and simulated data
+                    
+    
+    plot_observed_and_simulated_seq(bsi_obs_data, dists, pairs, eps)
+                    
+
+    ## Colonization
+                    
+    from cluster.scripts.SIR_functions import SIR, prop_to_nSIR
+                    
+    colseq = SIR(par1 = np.mean(pairs[np.where(dists< eps)[0],0]), par2 = np.mean(pairs[np.where(dists< eps)[0],1]),\
+                 nt = sim_pars["n_weeks"], N = sim_pars["pop_size"],reparam = sim_pars["reparam"],\
+                 batch_size = sim_pars["batch_size"], random_state = sim_pars["random_state"])
+
+    plt.plot(colseq[1][0], label = f"Mean colonization", color = "red")
+    plt.title(f"Colonization by clade {clade}")
+    plt.xlabel("Week")
+    plt.ylabel("Proportion of population")
+    plt.savefig(os.path.join(output_directory, "colonization.pdf"), format="pdf", bbox_inches="tight")
+    plt.show()
+    
+    ## Scatterplot of parameter pairs
+    
+    scatter_distance_points(pairs[:,0], pairs[:,1], dists, true_beta = None, true_gamma = None,\
+                        save = True, filename = os.path.join(output_directory, "grid_scatter.pdf"),\
+                            cutoff_upper = eps, cutoff_lower = 0)
+
     
     
 
