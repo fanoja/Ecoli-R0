@@ -4,9 +4,14 @@ import importlib
 import datetime
 import os
 
+
 print(os.getcwd())
 os.chdir('/u/50/ojalaf2/unix/Dropbox (Aalto)/Ecoli')
 print(os.getcwd())
+
+import sys
+sys.path.append(os.getcwd()) # fixes a ModuleNotFoundError when importing cluster.scripts.load_data
+
 
 
 from cluster.scripts.load_data import * # import data: odds ratios, BSI...
@@ -16,10 +21,6 @@ importlib.reload(cluster.scripts.BSI_functions) # for changes to take effect
 from cluster.scripts.BSI_functions import *
 
 
-#res_root = "res/sim_res/"
-timestamp = datetime.datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
-output_directory = f"res/sim_res/{res_id}_{timestamp}"
-os.mkdir(output_directory)
 
 use_incidence = True # Change to False if you wish to use the proportion of isolates instead
 
@@ -33,9 +34,17 @@ import grid_functions
 importlib.reload(grid_functions)
 from grid_functions import *
 
+res_id = r_id #+ "_" + datetime.date.today().strftime("%d-%m-%Y")
+
+#res_root = "res/sim_res/"
+timestamp = datetime.datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
+output_directory = f"res/sim_res/{res_id}_{timestamp}"
+os.mkdir(output_directory)
+
+
 # Calculate the distance between simulated and observed sequences in a grid
 
-bsi_pars = {"or_data": or_data, "clade": clade, "dataset": obs_data, "theta_c":theta_c, "theta_bsi":theta_bsi} # assume load_data loads or_data, norm_data and bsac_data
+bsi_pars = {"or_data": or_data, "clade": clade, "dataset": obs_data, "theta_c":theta_c, "theta_bsi":theta_bsi, "include_I0":include_I0} # assume load_data loads or_data, norm_data and bsac_data
 sim_pars = {"n_weeks": n_weeks, "pop_size": pop_size, "bsi_pars":bsi_pars, "is_prop":is_prop, "is_agg":is_agg,\
             "time_period":time_period, "reparam":reparam, "batch_size":batch_size, "random_state":random_state}
 
@@ -50,7 +59,6 @@ with open(os.path.join(output_directory, "sim_params.txt"), "w") as f:
         if key != "or_data":
             f.write(f"{key}: {value}\n")
 
-res_id = r_id #+ "_" + datetime.date.today().strftime("%d-%m-%Y")
 
 if true_par1 != None:
     print("Using synthetic data.")
@@ -83,7 +91,7 @@ else: # Use real data
 
     plt.plot(bsi_obs)
     plt.title(f"Real BSI clade: {clade}, dataset: {obs_data}")
-    plt.savefig(output_directory + "real_BSI_obs_" + res_id + ".pdf", format="pdf", bbox_inches="tight")
+    plt.savefig(output_directory + "/real_BSI_obs_" + res_id + ".pdf", format="pdf", bbox_inches="tight")
     
     theta_bsi_a_0 = bsi_obs.iloc[0]
 
@@ -111,7 +119,7 @@ np.save(output_directory + "/summary_dists" + ".npy", dists)
 # Scatterplot of parameter pairs:
 
 scatter_distance_points(pairs[:,0], pairs[:,1], dists, true_beta = true_par1, true_gamma = true_par2,\
-                        save = True, filename = res_root + "grid_scatter" + res_id)
+                        save = True, filename = output_directory + "/grid_scatter" + res_id)
 
 
 # Generate a set of visualizations:
@@ -121,4 +129,4 @@ importlib.reload(grid_functions)
 from grid_functions import *
 
 # I0 included:
-visualize_results("res/sim_res/res_test_2023-08-28_09-44-04", 0.3)
+#visualize_results("res/sim_res/res_test_2023-08-28_09-44-04", 0.3)

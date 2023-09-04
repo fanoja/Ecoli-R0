@@ -58,6 +58,7 @@ def SIR(par1, par2, nt, N, I0 = None, reparam = False, batch_size=1, random_stat
     if I0 == None:
         thetaS[:,0] = N-1
         thetaI[:,0] = 1
+        #print(thetaI[:,0])
     else:
         thetaI[:,0] = I0
         thetaS[:,0] = N - I0

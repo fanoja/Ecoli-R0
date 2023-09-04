@@ -161,12 +161,20 @@ def SIR_and_BSI_simulator(par1, par2, nt, N, bsi_pars, is_prop = False, is_agg =
         bsi_obs = get_incidence_data("data/NORM_incidence.csv", clade = clade, is_prop = is_prop, n_incidence_pop = N)
     else:
         bsi_obs = get_obs_BSI(df = bsac_data, clade = clade, is_prop = is_prop)
-        
-    theta_bsi_a_0 = bsi_obs.iloc[0]/N # note! Incidence data! Need to divide by the population size to get theta_bsi_a!
+    
     or_hat = get_OR_hat(or_data = or_data, clade = clade, dataset = dataset, batch_size = batch_size, random_state = random_state)
-    I0 = (theta_bsi_a_0*theta_c/(theta_bsi_a_0 + or_hat[0]*theta_bsi - theta_bsi_a_0*or_hat[0]))*N # this should be in individuals, not proportions!
+    
+    if bsi_pars["include_I0"]:
+        theta_bsi_a_0 = bsi_obs.iloc[0]/time_period
+        I0 = (theta_bsi_a_0*theta_c/(theta_bsi_a_0 + or_hat[0]*theta_bsi - theta_bsi_a_0*or_hat[0]))*N
+    else:
+        I0 = None
+    #print(f"theta_bsi_a_0 is {theta_bsi_a_0}")
     #print(f"I0 is {I0}")
+    #print(f"or_hat {or_hat}")
+    
     #sim_pars["I0"] = I0
+    
     
     # SIR simulator:
     

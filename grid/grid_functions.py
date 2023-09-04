@@ -7,6 +7,9 @@ importlib.reload(cluster.scripts.BSI_functions) # for changes to take effect
 
 from cluster.scripts.BSI_functions import *
 
+from cluster.scripts.load_data import * # import data: odds ratios, BSI... # Assuming that data has been loaded!
+    
+
 def distance(sim, obs, S1_fun, S2_fun):
     # Euclidean distance between the simulated and observed sequence
     # d(a*, a) where a* is the observed sequence and a is the simulated sequence
@@ -39,7 +42,7 @@ def distance_generalized(y_sim, y_obs, sum_func): # TODO: sum_func as args
     return np.sqrt(dist)
 
 
-def get_valid_beta_gamma_pairs(n_beta, n_gamma, min_gamma = 0.01, max_gamma = 0.1, min_R0 = 1, max_R0 = 8):
+def get_valid_beta_gamma_pairs(n_beta, n_gamma, min_gamma = 0.001, max_gamma = 0.1, min_R0 = 1, max_R0 = 8):
     # Get pairs of beta and gamma that produce R0 values within [min_R0, max_R0]
     # Returns (n_beta*n_gamma, 2) matrix of (gamma, beta) pairs
     
@@ -177,12 +180,14 @@ def plot_histograms(dists, betas, gammas, eps, par1_label = "Beta", par2_label =
     fig, axs = plt.subplots(1, 2)
     axs[0].hist(betas[ind])
     axs[1].hist(gammas[ind])
+    #axs[1,0].hist(betas[ind]/gammas[ind])
     axs[0].set_xlabel(par1_label)
     axs[1].set_xlabel(par2_label)
+    #axs[1,0].set_xlabel("R0")
     axs[0].set_title(f"Tolerance: {eps}")
     if xlim != None:
-        axs[0].set_xlim(xlim)
-        axs[1].set_xlim(xlim)
+        axs[0,0].set_xlim(xlim)
+        axs[0,1].set_xlim(xlim)
     if save:
         plt.savefig(filename, format="pdf", bbox_inches="tight")
     plt.show()
@@ -190,7 +195,7 @@ def plot_histograms(dists, betas, gammas, eps, par1_label = "Beta", par2_label =
 # Functions for visualizing observed and simulated data:
 
 
-def plot_observed_and_simulated_seq(bsi_obs_data, dists, pairs, eps):
+def plot_observed_and_simulated_seq(bsi_obs_data, dists, pairs, eps, sim_pars, output_directory):
     # Simulate based on the beta and gamma parameters - simulate more than one potential colonization to quantify uncertainty:
 
     # The same indices, however, draws from a uniform distribution over the potential BSI curves (for example, from min(beta) to max(beta)),
@@ -201,6 +206,11 @@ def plot_observed_and_simulated_seq(bsi_obs_data, dists, pairs, eps):
 
     par1s = acc_pairs[indx, 0]
     par2s = acc_pairs[indx, 1]
+    
+    clade = sim_pars["clade"]
+    #output_directory = sim_pars["output_directory"]
+    
+    bsi_pars = {"or_data":or_data, "clade": sim_pars["clade"], "dataset":sim_pars["dataset"], "theta_c":sim_pars["theta_c"], "theta_bsi":sim_pars["theta_bsi"], "include_I0": sim_pars["include_I0"]}
 
     mean_simseq = SIR_and_BSI_simulator(par1 = np.mean(pairs[np.where(dists< eps)[0],0]),\
                                         par2 = np.mean(pairs[np.where(dists < eps)[0],1]),\
@@ -231,8 +241,8 @@ def plot_observed_and_simulated_seq(bsi_obs_data, dists, pairs, eps):
                                        reparam = sim_pars["reparam"], batch_size = sim_pars["batch_size"],\
                                        random_state = sim_pars["random_state"])
 
-        plt.plot(simseq[0], color = "lightblue") # jos kerron sadalla, osuu tuohon yhteen piikkiin sentään.
-
+        plt.plot(simseq[0], color = "lightblue")
+        
     plt.plot(mean_simseq[0], label = "Simulated mean BSI", color = "blue")
     plt.plot(median_simseq[0], label = "Simulated median BSI", color = "violet")
     plt.plot(np.array(bsi_obs_data), label = "True BSI", color = "orange")
@@ -250,9 +260,9 @@ def visualize_results(output_directory, eps):
     
     # Read the specific simulation parameters from file into a dictionary:
     
-    from cluster.scripts.load_data import * # import data: odds ratios, BSI... # Assuming that data has been loaded!
-    
+
     sim_pars = read_sim_pars(output_directory)
+    clade = sim_pars["clade"]
     
     if sim_pars["dataset"] == "NORM":
         bsi_obs_data = get_incidence_data("data/NORM_incidence.csv", clade = sim_pars["clade"],\
@@ -261,6 +271,7 @@ def visualize_results(output_directory, eps):
     else:
         bsi_obs_data = get_obs_BSI(df = bsac_data, clade = sim_pars["clade"], is_prop = sim_pars["is_prop"])
 
+    print(bsi_obs_data)
     
     # Load distance matrix and the parameter pairs:
     
@@ -279,24 +290,44 @@ def visualize_results(output_directory, eps):
                 
     print(f"Beta mean: {np.mean(pairs[np.where(dists< eps)[0],0])}")
     print(f"Gamma mean: {np.mean(pairs[np.where(dists < eps)[0],1])}")
-    print(f"R = beta mean/gamma mean: {np.mean(pairs[np.where(dists < eps)[0],0])/np.mean(pairs[np.where(dists < eps)[0],1])}")
+    print(f"R = mean(beta/gamma): {np.mean(pairs[np.where(dists < eps)[0],0]/pairs[np.where(dists < eps)[0],1])}")
+    print(f"R = median(beta/gamma): {np.median(pairs[np.where(dists < eps)[0],0]/pairs[np.where(dists < eps)[0],1])}")
     #print(f"True parameters (for synthetic data): beta = {true_par1}, gamma = {true_par2}")
                 
     plot_histograms(dists, pairs[:,0], pairs[:,1], eps, save = True,\
                     filename = os.path.join(output_directory, "param_histograms.pdf"))
-
+    
+    # Plot a histogram of R:
+    
+    ind = np.where(dists < eps)[0]
+    plt.hist(pairs[np.where(dists < eps)[0],0]/pairs[np.where(dists < eps)[0],1])
+    plt.title(f"R0, tolerance: {eps}")
+    plt.xlabel("R0")
+    plt.savefig(os.path.join(output_directory, "R0_hist.pdf"), format="pdf", bbox_inches="tight")
+    plt.show()
     
     ## Observed and simulated data
                     
     
-    plot_observed_and_simulated_seq(bsi_obs_data, dists, pairs, eps)
+    plot_observed_and_simulated_seq(bsi_obs_data, dists, pairs, eps, sim_pars, output_directory)
                     
 
     ## Colonization
                     
     from cluster.scripts.SIR_functions import SIR, prop_to_nSIR
-                    
-    colseq = SIR(par1 = np.mean(pairs[np.where(dists< eps)[0],0]), par2 = np.mean(pairs[np.where(dists< eps)[0],1]),\
+    
+
+    print(sim_pars)
+    
+    if sim_pars["include_I0"]:
+        theta_bsi_a_0 = bsi_obs_data.iloc[0]/sim_pars["time_period"]
+        or_hat = get_OR_hat(or_data = or_data, clade = sim_pars["clade"], dataset = sim_pars["dataset"], batch_size = sim_pars["batch_size"], random_state = sim_pars["random_state"])
+        I0 = (theta_bsi_a_0*sim_pars["theta_c"]/(theta_bsi_a_0 + or_hat[0]*sim_pars["theta_bsi"] - theta_bsi_a_0*or_hat[0]))*sim_pars["pop_size"]
+    else:
+        I0 = None
+        
+        
+    colseq = SIR(par1 = np.mean(pairs[np.where(dists< eps)[0],0]), par2 = np.mean(pairs[np.where(dists< eps)[0],1]), I0 = I0,\
                  nt = sim_pars["n_weeks"], N = sim_pars["pop_size"],reparam = sim_pars["reparam"],\
                  batch_size = sim_pars["batch_size"], random_state = sim_pars["random_state"])
 
