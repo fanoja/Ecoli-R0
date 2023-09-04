@@ -140,7 +140,7 @@ import re
 from cluster.scripts.load_data import *
 
 
-def exp_smoother(bsi):
+def exp_smoother(bsi, alpha = 0.2):
     # Assumes an array bsi shaped (batch_size, n_obs)
 
     bs = bsi.shape[0] # batch size.
