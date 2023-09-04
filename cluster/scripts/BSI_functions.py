@@ -139,6 +139,22 @@ def plot_BSI(y_bsi):
 import re
 from cluster.scripts.load_data import *
 
+
+def exp_smoother(bsi):
+    # Assumes an array bsi shaped (batch_size, n_obs)
+
+    bs = bsi.shape[0] # batch size.
+    bsi_filtered = np.zeros((bs, len(bsi[0])))
+    
+    for i in range(0, bs):
+        x = bsi[i]
+        bsi_filtered[i][0] = x[0] # initialize at first value
+        for j in range(1, len(x)):
+            bsi_filtered[i][j] = alpha*x[j] + (1-alpha)*bsi_filtered[i][j-1] # Exponential smoothing
+                       
+    return bsi_filtered # returns an array of shape (bs, n_obs)
+
+
 def SIR_and_BSI_simulator(par1, par2, nt, N, bsi_pars, is_prop = False, is_agg = False, time_period = 52, reparam = False, batch_size = 1, random_state = None):
     # A simulator function combining both the SIR simulation and the observational model
     
@@ -194,6 +210,9 @@ def SIR_and_BSI_simulator(par1, par2, nt, N, bsi_pars, is_prop = False, is_agg =
     if is_agg:
         BSI = sum_over_bsi(BSI, time_period = time_period)
         #BSI = max_bsi_per_year(BSI, time_period = 52)
+        
+    # Exponential smoothing. Comment out to remove:
+    BSI = exp_smoother(BSI)
         
     return BSI
 
