@@ -253,6 +253,54 @@ def plot_observed_and_simulated_seq(bsi_obs_data, dists, pairs, eps, sim_pars, o
     plt.ylabel("Proportion of population")
     plt.show()
     
+def plot_colonization(bsi_obs_data, dists, pairs, eps, sim_pars, output_directory):
+
+    from cluster.scripts.SIR_functions import SIR, prop_to_nSIR
+
+
+    print(sim_pars)
+
+
+
+    if sim_pars["include_I0"]:
+        theta_bsi_a_0 = bsi_obs_data.iloc[0]/sim_pars["time_period"]
+        or_hat = get_OR_hat(or_data = or_data, clade = sim_pars["clade"], dataset = sim_pars["dataset"], batch_size = sim_pars["batch_size"], random_state = sim_pars["random_state"])
+        I0 = (theta_bsi_a_0*sim_pars["theta_c"]/(theta_bsi_a_0 + or_hat[0]*sim_pars["theta_bsi"] - theta_bsi_a_0*or_hat[0]))*sim_pars["pop_size"]
+    else:
+        I0 = None
+
+
+    n_draws = 100 # Number of beta-gamma pairs to draw from the posterior
+    acc_pairs = pairs[np.where(dists< eps)[0],:] # accepted parameter pairs
+    indx = np.random.choice(np.arange(1,len(acc_pairs[:,0])), size = n_draws) # pairs to choose from; only use the accepted parameter pairs
+    par1s = acc_pairs[indx, 0]
+    par2s = acc_pairs[indx, 1]
+
+    for i in range(0, n_draws):
+
+        colseq = SIR(par1 = par1s[i], par2 = par2s[i], I0 = I0,\
+                 nt = sim_pars["n_weeks"], N = sim_pars["pop_size"],reparam = sim_pars["reparam"],\
+                 batch_size = sim_pars["batch_size"], random_state = sim_pars["random_state"])
+
+        plt.plot(colseq[1][0], color = "pink")
+
+
+    colseq_mean = SIR(par1 = np.mean(pairs[np.where(dists< eps)[0],0]), par2 = np.mean(pairs[np.where(dists< eps)[0],1]), I0 = I0,\
+                 nt = sim_pars["n_weeks"], N = sim_pars["pop_size"],reparam = sim_pars["reparam"],\
+                 batch_size = sim_pars["batch_size"], random_state = sim_pars["random_state"])
+    colseq_median = SIR(par1 = np.median(pairs[np.where(dists< eps)[0],0]), par2 = np.median(pairs[np.where(dists< eps)[0],1]), I0 = I0,\
+                 nt = sim_pars["n_weeks"], N = sim_pars["pop_size"],reparam = sim_pars["reparam"],\
+                 batch_size = sim_pars["batch_size"], random_state = sim_pars["random_state"])
+
+    plt.plot(colseq_mean[1][0], label = f"Mean colonization", color = "red")
+    plt.plot(colseq_median[1][0], label = f"Median colonization", color = "violet")
+    plt.title(f"Colonization by clade {clade}")
+    plt.xlabel("Week")
+    plt.ylabel("Proportion of population")
+    plt.legend()
+    plt.savefig(os.path.join(output_directory, "colonization.pdf"), format="pdf", bbox_inches="tight")
+    plt.show()
+    
 def visualize_results(output_directory, eps):
     # Create all relevevant visualizations and save to output_directory
     # Give a directory to visualize results from and a tolerance value.
@@ -314,29 +362,7 @@ def visualize_results(output_directory, eps):
 
     ## Colonization
                     
-    from cluster.scripts.SIR_functions import SIR, prop_to_nSIR
-    
-
-    print(sim_pars)
-    
-    if sim_pars["include_I0"]:
-        theta_bsi_a_0 = bsi_obs_data.iloc[0]/sim_pars["time_period"]
-        or_hat = get_OR_hat(or_data = or_data, clade = sim_pars["clade"], dataset = sim_pars["dataset"], batch_size = sim_pars["batch_size"], random_state = sim_pars["random_state"])
-        I0 = (theta_bsi_a_0*sim_pars["theta_c"]/(theta_bsi_a_0 + or_hat[0]*sim_pars["theta_bsi"] - theta_bsi_a_0*or_hat[0]))*sim_pars["pop_size"]
-    else:
-        I0 = None
-        
-        
-    colseq = SIR(par1 = np.mean(pairs[np.where(dists< eps)[0],0]), par2 = np.mean(pairs[np.where(dists< eps)[0],1]), I0 = I0,\
-                 nt = sim_pars["n_weeks"], N = sim_pars["pop_size"],reparam = sim_pars["reparam"],\
-                 batch_size = sim_pars["batch_size"], random_state = sim_pars["random_state"])
-
-    plt.plot(colseq[1][0], label = f"Mean colonization", color = "red")
-    plt.title(f"Colonization by clade {clade}")
-    plt.xlabel("Week")
-    plt.ylabel("Proportion of population")
-    plt.savefig(os.path.join(output_directory, "colonization.pdf"), format="pdf", bbox_inches="tight")
-    plt.show()
+    plot_colonization(bsi_obs_data, dists, pairs, eps, sim_pars, output_directory)
     
     ## Scatterplot of parameter pairs
     
