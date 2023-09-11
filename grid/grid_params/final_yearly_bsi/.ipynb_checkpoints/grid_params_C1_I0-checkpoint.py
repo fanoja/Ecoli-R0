@@ -1,0 +1,17 @@
+pop_size = 1000000
+n_weeks = 14*52
+clade = "C1"
+obs_data = "NORM"
+true_par1 = None
+true_par2 = None
+theta_c = 1
+is_prop = True
+reparam = False
+is_agg = True
+time_period = 52
+theta_bsi = 0.00002/time_period
+random_state = None
+batch_size = 1
+r_id = "obs_NORM_C1_I0" # id to be added to the name of the figures/saved distance matrices
+n_grid = 250 # number of parameter pairs to simulate
+include_I0 = True # Wether or not to include I0
