@@ -42,9 +42,10 @@ def distance_generalized(y_sim, y_obs, sum_func): # TODO: sum_func as args
     return np.sqrt(dist)
 
 
-def get_valid_beta_gamma_pairs(n_beta, n_gamma, min_gamma = 0.001, max_gamma = 0.1, min_R0 = 1, max_R0 = 8):
+def get_valid_beta_gamma_pairs(n_beta, n_gamma, min_gamma = 0.001, max_gamma = 0.1, min_R0 = 1.01, max_R0 = 20):
     # Get pairs of beta and gamma that produce R0 values within [min_R0, max_R0]
     # Returns (n_beta*n_gamma, 2) matrix of (gamma, beta) pairs
+    # R = [1.01, 20] From Lintusaari et al 2019
     
     gammas = np.linspace(min_gamma, max_gamma, n_gamma)  
     i = 0
@@ -158,7 +159,7 @@ def read_sim_pars(filepath):
         
     return sim_pars
 
-def scatter_distance_points(betas, gammas, dists, true_beta = None, true_gamma = None, ylab = "Gamma", xlab = "Beta", cutoff_upper = 1, cutoff_lower = 0, save = False, filename = "no_name"):
+def scatter_distance_points(betas, gammas, dists, true_beta = None, true_gamma = None, ylab = "Gamma", xlab = "Beta", cutoff_upper = 1, cutoff_lower = 0, save = False, filename = "no_name", title = None):
     
     sc = plt.scatter(betas, gammas, c = dists, s = 1)
     if true_gamma != None and true_beta != None:
@@ -169,6 +170,8 @@ def scatter_distance_points(betas, gammas, dists, true_beta = None, true_gamma =
     plt.colorbar(sc)
     sc.set_cmap('viridis') # 'plasma'
     sc.set_clim(cutoff_lower, cutoff_upper)
+    if title != None:
+        plt.title(title)
     if save:
         plt.savefig(filename, format="pdf", bbox_inches="tight")
     plt.show()
@@ -190,6 +193,57 @@ def plot_histograms(dists, betas, gammas, eps, par1_label = "Beta", par2_label =
         axs[0,1].set_xlim(xlim)
     if save:
         plt.savefig(filename, format="pdf", bbox_inches="tight")
+    plt.show()
+    
+def plot_posterior_scatterplot(summary_dists, pairs, dists, eps, output_directory):
+    # Plot a scatterplot of the posterior parameters and their joint distributions
+    
+    acc_pairs = pairs[np.where(dists< eps)[0],:]
+    
+    fig, axs = plt.subplots(2, 2)
+    axs[0,0].hist(acc_pairs[:,0])
+    axs[0,0].set_ylabel("Beta")
+    axs[0,1].scatter(acc_pairs[:,0], acc_pairs[:,1])
+    #axs[0,1].set_ylabel("Beta")
+    #axs[0,1].set_xlabel("Gamma")
+    axs[1,0].scatter(acc_pairs[:,1], acc_pairs[:,0])
+    axs[1,0].set_ylabel("Gamma")
+    axs[1,0].set_xlabel("Beta")
+    axs[1,1].hist(acc_pairs[:,1])
+    axs[1,1].set_xlabel("Gamma")
+    axs[0,0].set_title(f"Posterior, tolerance: {eps}")
+    plt.tight_layout()
+    plt.savefig(os.path.join(output_directory, "posterior_plots.pdf"), format="pdf", bbox_inches="tight")
+    plt.show()
+    
+# Summary distance visualizations
+
+
+def plot_summary_dists(summary_dists, output_directory, scale = False, S1_name = "Max BSI", S2_name = "Max t", filename = "summary_dists_plot.pdf"):
+    # Plot histograms and scatterplots of summary dists
+    # Assumes two summaries
+    
+    if scale:
+        summary_dists[:,0] = 1/np.std(summary_dists[:,0])*summary_dists[:,0]
+        summary_dists[:,1] = 1/np.std(summary_dists[:,1])*summary_dists[:,1]
+        
+    fig, axs = plt.subplots(2, 2)
+    axs[0,0].hist(summary_dists[:,0])
+    axs[0,0].set_ylabel(S1_name)
+    axs[0,1].scatter(summary_dists[:,0], summary_dists[:,1])
+    #axs[0,1].set_ylabel("Beta")
+    #axs[0,1].set_xlabel("Gamma")
+    axs[1,0].scatter(summary_dists[:,1], summary_dists[:,0])
+    axs[1,0].set_ylabel(S2_name)
+    axs[1,0].set_xlabel(S1_name)
+    axs[1,1].hist(summary_dists[:,1])
+    axs[1,1].set_xlabel(S2_name)
+    if scale:
+        axs[0,0].set_title(f"Summary dists, scaled")
+    else:
+        axs[0,0].set_title(f"Summary dists, unscaled")
+    plt.tight_layout()
+    plt.savefig(os.path.join(output_directory, filename), format="pdf", bbox_inches="tight")
     plt.show()
     
 # Functions for visualizing observed and simulated data:
@@ -253,14 +307,29 @@ def plot_observed_and_simulated_seq(bsi_obs_data, dists, pairs, eps, sim_pars, o
     plt.ylabel("Proportion of population")
     plt.show()
     
+    
+def prior_histograms(pairs, output_directory):
+
+    # R0 histogram
+    plt.hist(pairs[:,0]/pairs[:,1])
+    plt.title("R0 = beta/gamma prior")
+    plt.savefig(os.path.join(output_directory, "R0_prior.pdf"), format="pdf", bbox_inches="tight")
+    plt.show()
+    
+    # beta/gamma histogram
+    fig, axs = plt.subplots(1, 2)
+    axs[0].hist(pairs[:,0])
+    axs[1].hist(pairs[:,1])
+    #axs[2].hist(pairs[:,0]/pairs[:,1])
+    axs[0].set_title(f"Par1 (beta) prior")
+    axs[1].set_title(f"Par2 (gamma) prior")
+    #axs[2].set_title(f"R0 prior")
+    plt.savefig(os.path.join(output_directory, "param_priors.pdf"), format="pdf", bbox_inches="tight")
+    plt.show()
+    
 def plot_colonization(bsi_obs_data, dists, pairs, eps, sim_pars, output_directory):
 
     from cluster.scripts.SIR_functions import SIR, prop_to_nSIR
-
-
-    print(sim_pars)
-
-
 
     if sim_pars["include_I0"]:
         theta_bsi_a_0 = bsi_obs_data.iloc[0]/sim_pars["time_period"]
@@ -292,6 +361,8 @@ def plot_colonization(bsi_obs_data, dists, pairs, eps, sim_pars, output_director
                  nt = sim_pars["n_weeks"], N = sim_pars["pop_size"],reparam = sim_pars["reparam"],\
                  batch_size = sim_pars["batch_size"], random_state = sim_pars["random_state"])
 
+    clade = sim_pars["clade"]
+    
     plt.plot(colseq_mean[1][0], label = f"Mean colonization", color = "red")
     plt.plot(colseq_median[1][0], label = f"Median colonization", color = "violet")
     plt.title(f"Colonization by clade {clade}")
@@ -325,6 +396,7 @@ def visualize_results(output_directory, eps):
     
     dists = np.load(os.path.join(output_directory, "dists.npy"))
     pairs = np.load(os.path.join(output_directory, "pairs.npy"))
+    summary_dists = np.load(os.path.join(output_directory, "summary_dists.npy"))
 
     
     ## Distance histogram
@@ -345,6 +417,7 @@ def visualize_results(output_directory, eps):
     plot_histograms(dists, pairs[:,0], pairs[:,1], eps, save = True,\
                     filename = os.path.join(output_directory, "param_histograms.pdf"))
     
+    
     # Plot a histogram of R:
     
     ind = np.where(dists < eps)[0]
@@ -353,6 +426,11 @@ def visualize_results(output_directory, eps):
     plt.xlabel("R0")
     plt.savefig(os.path.join(output_directory, "R0_hist.pdf"), format="pdf", bbox_inches="tight")
     plt.show()
+    
+    
+    ## Posterior distribution (distribution of accepted parameters as a joint distribution in addition to the histograms)
+    
+    plot_posterior_scatterplot(summary_dists, pairs, dists, eps, output_directory)
     
     ## Observed and simulated data
                     
@@ -369,7 +447,77 @@ def visualize_results(output_directory, eps):
     scatter_distance_points(pairs[:,0], pairs[:,1], dists, true_beta = None, true_gamma = None,\
                         save = True, filename = os.path.join(output_directory, "grid_scatter.pdf"),\
                             cutoff_upper = eps, cutoff_lower = 0)
+    
+    ## Grid scatterplots of summary distances, scaled and unscaled
+
+    # Max BSI, unscaled:
+    scatter_distance_points(pairs[:,0], pairs[:,1], summary_dists[:,0], true_beta = None, true_gamma = None, ylab = "Gamma", xlab = "Beta", cutoff_upper = eps, cutoff_lower = 0, save = True, filename = "grid_scatter_max_BSI_unscaled.pdf", title = "Max BSI, unscaled")
+
+    # Max t, unscaled:
+    scatter_distance_points(pairs[:,0], pairs[:,1], summary_dists[:,1], true_beta = None, true_gamma = None, ylab = "Gamma", xlab = "Beta", cutoff_upper = eps, cutoff_lower = 0, save = True, filename = "grid_scatter_max_t_unscaled.pdf", title = "Max t, unscaled")
+
+    # Scaled scatterplot:
+
+    scatter_distance_points(pairs[:,0], pairs[:,1], 1/np.std(summary_dists[:,0])*summary_dists[:,0], true_beta = None, true_gamma = None, ylab = "Gamma", xlab = "Beta", cutoff_upper = eps, cutoff_lower = 0, save = True, filename = "grid_scatter_max_BSI_scaled.pdf", title =  "Max BSI, scaled")
+
+    scatter_distance_points(pairs[:,0], pairs[:,1], 1/np.std(summary_dists[:,1])*summary_dists[:,1], true_beta = None, true_gamma = None, ylab = "Gamma", xlab = "Beta", cutoff_upper = eps, cutoff_lower = 0, save = True, filename = "grid_scatter_max_t_scaled.pdf", title = "Max t, scaled")
+
+    ## Visualize summary distances:
+    
+    # All simulations
+    plot_summary_dists(summary_dists, output_directory, scale = False, filename = "all_sim_summary_dists_plot_unscaled.pdf")
+    plot_summary_dists(summary_dists, output_directory, scale = True, filename = "all_sim_summary_dists_plot_scaled.pdf") # Note top right y-axis!
+    
+    # Accepted simulations
+    indx = np.where(dists< eps)[0]
+    acc_summary_dists = summary_dists[indx,:]
+    plot_summary_dists(acc_summary_dists, output_directory, scale = False, filename = "acc_sim_summary_dists_plot_unscaled.pdf")
+    plot_summary_dists(acc_summary_dists, output_directory, scale = True, filename = "acc_sim_summary_dists_plot_scaled.pdf")
+    
+    
+    
+    ## Prior histograms:
+    
+    prior_histograms(pairs, output_directory)
 
     
+### Utility functions ###
+
+# Function for quickly modifying grid_params files in a specific directory
+
+def modify_grid_params(directory, var_to_change, new_value):
+    # Change the value of a variable in all files in directory
     
+    # directory: directory the files of which are modified
+    # var_to_change: variable you want to change, such as theta_bsi
+    # new_value: new value assigned to var_to_change
+    
+
+    # Open each file in the directory:
+    files = os.listdir(directory)
+
+    for file in files:
+        file = os.path.join(directory, file)
+        new_content = ""
+        try:
+            with open(file, "r") as f: # read content and modify
+                lines = f.readlines()
+                for line in lines:
+                    parts = line.strip().split(' = ')
+                    var = parts[0]
+                    value = parts[1]
+                    if parts[0] != var_to_change:
+                        new_content += f"{var} = {value}\n"
+                    elif str(parts[0]) == var_to_change:
+                        new_content += f"{var} = {new_value}\n"
+
+        except IsADirectoryError:
+            print(f"DirectoryError: {file}")
+
+        # Write new content to file:
+        try:
+            with open(file, "w") as f:
+                f.write(new_content)
+        except IsADirectoryError:
+            print(f"DirectoryError: {file}")
 

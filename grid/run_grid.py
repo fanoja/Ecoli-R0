@@ -112,7 +112,7 @@ dists, summary_dists = get_distance_points(pairs, bsi_obs, sim_pars, [BSI_max, B
 #np.save(output_directory + "summary_dists" + "_" + res_id + ".npy", dists)
 np.save(output_directory + "/pairs" + ".npy", pairs)
 np.save(output_directory + "/dists" + ".npy", dists)
-np.save(output_directory + "/summary_dists" + ".npy", dists)
+np.save(output_directory + "/summary_dists" + ".npy", summary_dists)
 
 # Most of the visualization of 'dists' is done in a notebook given how many manual tweaks the figures might need (tolerance etc).
 
