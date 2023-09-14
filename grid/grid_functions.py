@@ -247,9 +247,17 @@ def plot_summary_dists(summary_dists, output_directory, scale = False, S1_name =
     plt.show()
     
 # Functions for visualizing observed and simulated data:
+def get_bounds(par_posterior, ci):
+    
+    lower_ci = (100-ci)/2
+    upper_ci = 100 - (100-ci)/2
+    
+    lb = np.percentile(par_posterior, lower_ci)
+    ub = np.percentile(par_posterior, upper_ci)
+    
+    return lb, ub
 
-
-def plot_observed_and_simulated_seq(bsi_obs_data, dists, pairs, eps, sim_pars, output_directory):
+def plot_observed_and_simulated_seq(bsi_obs_data, dists, pairs, eps, sim_pars, output_directory, ci = 90):
     # Simulate based on the beta and gamma parameters - simulate more than one potential colonization to quantify uncertainty:
 
     # The same indices, however, draws from a uniform distribution over the potential BSI curves (for example, from min(beta) to max(beta)),
@@ -286,16 +294,41 @@ def plot_observed_and_simulated_seq(bsi_obs_data, dists, pairs, eps, sim_pars, o
                                           reparam = sim_pars["reparam"], batch_size = sim_pars["batch_size"],\
                                           random_state = sim_pars["random_state"])
 
-    for i in range(0,n_reps):
-        simseq = SIR_and_BSI_simulator(par1 = par1s[i], par2 = par2s[i],\
-                                       nt = sim_pars["n_weeks"], N = sim_pars["pop_size"],\
-                                       bsi_pars = bsi_pars, is_prop = sim_pars["is_prop"],\
-                                       is_agg = sim_pars["is_agg"],\
-                                       time_period = sim_pars["time_period"],\
-                                       reparam = sim_pars["reparam"], batch_size = sim_pars["batch_size"],\
-                                       random_state = sim_pars["random_state"])
+    #for i in range(0,n_reps):
+        #simseq = SIR_and_BSI_simulator(par1 = par1s[i], par2 = par2s[i],\
+                                       #nt = sim_pars["n_weeks"], N = sim_pars["pop_size"],\
+                                       #bsi_pars = bsi_pars, is_prop = sim_pars["is_prop"],\
+                                       #is_agg = sim_pars["is_agg"],\
+                                       #time_period = sim_pars["time_period"],\
+                                       #reparam = sim_pars["reparam"], batch_size = sim_pars["batch_size"],\
+                                       #random_state = sim_pars["random_state"])
 
-        plt.plot(simseq[0], color = "lightblue")
+        #plt.plot(simseq[0], color = "lightblue")
+        
+    # Plot the upper and lower bounds for both parameters:
+    par1_posterior = acc_pairs[:,0]
+    par2_posterior = acc_pairs[:,1]
+    
+    par1_bounds = get_bounds(par1_posterior, ci)
+    par2_bounds = get_bounds(par2_posterior, ci)
+    
+    lb_simseq = SIR_and_BSI_simulator(par1 = par1_bounds[0], par2 = par2_bounds[0],\
+                                   nt = sim_pars["n_weeks"], N = sim_pars["pop_size"],\
+                                   bsi_pars = bsi_pars, is_prop = sim_pars["is_prop"],\
+                                   is_agg = sim_pars["is_agg"],\
+                                   time_period = sim_pars["time_period"],\
+                                   reparam = sim_pars["reparam"], batch_size = sim_pars["batch_size"],\
+                                   random_state = sim_pars["random_state"])
+    ub_simseq = SIR_and_BSI_simulator(par1 = par1_bounds[1], par2 = par2_bounds[1],\
+                                   nt = sim_pars["n_weeks"], N = sim_pars["pop_size"],\
+                                   bsi_pars = bsi_pars, is_prop = sim_pars["is_prop"],\
+                                   is_agg = sim_pars["is_agg"],\
+                                   time_period = sim_pars["time_period"],\
+                                   reparam = sim_pars["reparam"], batch_size = sim_pars["batch_size"],\
+                                   random_state = sim_pars["random_state"])
+
+    plt.plot(lb_simseq[0], color = "lightblue", linestyle='--')
+    plt.plot(ub_simseq[0], color = "lightblue", linestyle='--')
         
     plt.plot(mean_simseq[0], label = "Simulated mean BSI", color = "blue")
     plt.plot(median_simseq[0], label = "Simulated median BSI", color = "violet")
@@ -345,13 +378,15 @@ def plot_colonization(bsi_obs_data, dists, pairs, eps, sim_pars, output_director
     par1s = acc_pairs[indx, 0]
     par2s = acc_pairs[indx, 1]
 
-    for i in range(0, n_draws):
+    #for i in range(0, n_draws):
 
-        colseq = SIR(par1 = par1s[i], par2 = par2s[i], I0 = I0,\
-                 nt = sim_pars["n_weeks"], N = sim_pars["pop_size"],reparam = sim_pars["reparam"],\
-                 batch_size = sim_pars["batch_size"], random_state = sim_pars["random_state"])
+        #colseq = SIR(par1 = par1s[i], par2 = par2s[i], I0 = I0,\
+                 #nt = sim_pars["n_weeks"], N = sim_pars["pop_size"],reparam = sim_pars["reparam"],\
+                 #batch_size = sim_pars["batch_size"], random_state = sim_pars["random_state"])
 
-        plt.plot(colseq[1][0], color = "pink")
+        #plt.plot(colseq[1][0], color = "pink")
+        
+    
 
 
     colseq_mean = SIR(par1 = np.mean(pairs[np.where(dists< eps)[0],0]), par2 = np.mean(pairs[np.where(dists< eps)[0],1]), I0 = I0,\
