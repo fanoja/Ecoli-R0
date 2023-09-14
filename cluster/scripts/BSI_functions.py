@@ -12,18 +12,25 @@ def get_OR_hat_pars(or_data, clade = "A", dataset = "NORM"):
     
 def get_OR_hat(or_data, clade = "A", dataset = "NORM", batch_size = 1, random_state = None):
     # TODO: fix that random state
-    or_mu, or_sd = get_OR_hat_pars(or_data, clade = clade, dataset = dataset)
-
+    or_mu, or_sd = get_OR_hat_pars(or_data, clade = clade, dataset = dataset) 
+    
+    # using log odds for the normal distribution: 
+    #or_mu = np.log(or_mu)
+    #or_sd = np.log(or_sd)
+    
+    #print(or_sd)
+    #print(or_mu)
+    
     OR_hats = np.empty(batch_size)
     
     for b in range(0, batch_size):
-        OR_hat = np.random.normal(or_mu, or_sd**2, 1)
+        OR_hat = np.random.normal(or_mu, or_sd, 1) 
 
         max_iter = 1000
         i = 0
 
         while OR_hat[0] < 0:
-            OR_hat = np.random.normal(or_mu, or_sd**2, 1)
+            OR_hat = np.random.normal(or_mu, or_sd, 1)
             i = i + 1
             if i == max_iter:
                 break
@@ -249,3 +256,54 @@ def BSI_max(y):
     
     return max_bsi#.reshape(-1,1).transpose()
 
+
+def BSI_vector(y):
+    # Compare all yearly simulated BSIs to the observed BSI
+    # Instead of a scalar summary statistic, we now have a vector of n points (n = number of years in the observed data)
+    
+    return y
+
+
+# 13 summaries, one for each year:
+
+def BSI_1(y):
+    return y[0]
+
+def BSI_2(y):
+    return y[1]
+
+def BSI_3(y):
+    return y[2]
+
+def BSI_4(y):
+    return y[3]
+
+def BSI_5(y):
+    return y[4]
+
+def BSI_6(y):
+    return y[5]
+
+def BSI_7(y):
+    return y[6]
+
+def BSI_8(y):
+    return y[7]
+
+def BSI_9(y):
+    return y[8]
+
+def BSI_10(y):
+    return y[9]
+
+def BSI_11(y):
+    return y[10]
+
+def BSI_12(y):
+    return y[11]
+
+def BSI_13(y):
+    return y[12]
+
+def BSI_14(y):
+    return y[13]
