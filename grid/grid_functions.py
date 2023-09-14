@@ -112,7 +112,7 @@ def get_distance_points(pairs, bsi_obs, sim_pars, summaries):
         
         k = 0
         for summary in summaries:
-            summary_dists[i,k] = (summary(bsi_obs) - summary(sim_seq))**2
+            summary_dists[i,k] = np.sum((summary(bsi_obs) - summary(sim_seq))**2)
             k += 1
         
 
@@ -451,28 +451,34 @@ def visualize_results(output_directory, eps):
     ## Grid scatterplots of summary distances, scaled and unscaled
 
     # Max BSI, unscaled:
-    scatter_distance_points(pairs[:,0], pairs[:,1], summary_dists[:,0], true_beta = None, true_gamma = None, ylab = "Gamma", xlab = "Beta", cutoff_upper = eps, cutoff_lower = 0, save = True, filename = "grid_scatter_max_BSI_unscaled.pdf", title = "Max BSI, unscaled")
+    #scatter_distance_points(pairs[:,0], pairs[:,1], summary_dists[:,0], true_beta = None, true_gamma = None, ylab = "Gamma", xlab = "Beta", cutoff_upper = eps, cutoff_lower = 0, save = True, filename = os.path.join(output_directory, "grid_scatter_S1_unscaled.pdf"), title = "S1 unscaled")
 
-    # Max t, unscaled:
-    scatter_distance_points(pairs[:,0], pairs[:,1], summary_dists[:,1], true_beta = None, true_gamma = None, ylab = "Gamma", xlab = "Beta", cutoff_upper = eps, cutoff_lower = 0, save = True, filename = "grid_scatter_max_t_unscaled.pdf", title = "Max t, unscaled")
+    
+    #if summary_dists.shape[1] == 2:
+        # Max t, unscaled:
+        #scatter_distance_points(pairs[:,0], pairs[:,1], summary_dists[:,1], true_beta = None, true_gamma = None, ylab = "Gamma", xlab = "Beta", cutoff_upper = eps, cutoff_lower = 0, save = True, filename = os.path.join(output_directory, "grid_scatter_S2_unscaled.pdf"), title = "S2, unscaled")
 
     # Scaled scatterplot:
+    # TODO: generalize this to work with any number of summary statistics
+    
+    for s in range(0, summary_dists.shape[1]):
+        
+        scatter_distance_points(pairs[:,0], pairs[:,1], 1/np.std(summary_dists[:,s])*summary_dists[:,s], true_beta = None, true_gamma = None, ylab = "Gamma", xlab = "Beta", cutoff_upper = eps, cutoff_lower = 0, save = True, filename = os.path.join(output_directory, f"grid_scatter_S{s + 1}_scaled.pdf"), title =  f"S{s + 1}, scaled")
 
-    scatter_distance_points(pairs[:,0], pairs[:,1], 1/np.std(summary_dists[:,0])*summary_dists[:,0], true_beta = None, true_gamma = None, ylab = "Gamma", xlab = "Beta", cutoff_upper = eps, cutoff_lower = 0, save = True, filename = "grid_scatter_max_BSI_scaled.pdf", title =  "Max BSI, scaled")
-
-    scatter_distance_points(pairs[:,0], pairs[:,1], 1/np.std(summary_dists[:,1])*summary_dists[:,1], true_beta = None, true_gamma = None, ylab = "Gamma", xlab = "Beta", cutoff_upper = eps, cutoff_lower = 0, save = True, filename = "grid_scatter_max_t_scaled.pdf", title = "Max t, scaled")
+    #if summary_dists.shape[1] == 2:
+        #scatter_distance_points(pairs[:,0], pairs[:,1], 1/np.std(summary_dists[:,1])*summary_dists[:,1], true_beta = None, true_gamma = None, ylab = "Gamma", xlab = "Beta", cutoff_upper = eps, cutoff_lower = 0, save = True, filename = os.path.join(output_directory, "grid_scatter_S2_scaled.pdf"), title = "S2, scaled")
 
     ## Visualize summary distances:
     
     # All simulations
-    plot_summary_dists(summary_dists, output_directory, scale = False, filename = "all_sim_summary_dists_plot_unscaled.pdf")
-    plot_summary_dists(summary_dists, output_directory, scale = True, filename = "all_sim_summary_dists_plot_scaled.pdf") # Note top right y-axis!
+    #plot_summary_dists(summary_dists, output_directory, scale = False, filename = "all_sim_summary_dists_plot_unscaled.pdf")
+    #plot_summary_dists(summary_dists, output_directory, scale = True, filename = "all_sim_summary_dists_plot_scaled.pdf") # Note top right y-axis!
     
     # Accepted simulations
-    indx = np.where(dists< eps)[0]
-    acc_summary_dists = summary_dists[indx,:]
-    plot_summary_dists(acc_summary_dists, output_directory, scale = False, filename = "acc_sim_summary_dists_plot_unscaled.pdf")
-    plot_summary_dists(acc_summary_dists, output_directory, scale = True, filename = "acc_sim_summary_dists_plot_scaled.pdf")
+    #indx = np.where(dists< eps)[0]
+    #acc_summary_dists = summary_dists[indx,:]
+    #plot_summary_dists(acc_summary_dists, output_directory, scale = False, filename = "acc_sim_summary_dists_plot_unscaled.pdf")
+    #plot_summary_dists(acc_summary_dists, output_directory, scale = True, filename = "acc_sim_summary_dists_plot_scaled.pdf")
     
     
     
