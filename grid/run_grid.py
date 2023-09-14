@@ -7,6 +7,7 @@ import os
 
 print(os.getcwd())
 os.chdir('/u/50/ojalaf2/unix/Dropbox (Aalto)/Ecoli')
+#os.chdir('/scratch/work/ojalaf2/Ecoli')
 print(os.getcwd())
 
 import sys
@@ -83,6 +84,7 @@ else: # Use real data
     
     if use_incidence:
         bsi_obs = get_incidence_data("data/NORM_incidence.csv", clade = clade, is_prop = is_prop, n_incidence_pop = pop_size)
+        bsi_obs = bsi_obs.values
     else:
         if obs_data == "NORM":
             bsi_obs = get_obs_BSI(df = norm_data, clade = clade, is_prop = is_prop)
@@ -93,7 +95,7 @@ else: # Use real data
     plt.title(f"Real BSI clade: {clade}, dataset: {obs_data}")
     plt.savefig(output_directory + "/real_BSI_obs_" + res_id + ".pdf", format="pdf", bbox_inches="tight")
     
-    theta_bsi_a_0 = bsi_obs.iloc[0]
+    theta_bsi_a_0 = bsi_obs[0] # bsi_obs.iloc[0]
 
 
 # Run the simulation
@@ -103,7 +105,7 @@ if reparam:
 else:
     pairs = get_valid_beta_gamma_pairs(n_grid, n_grid)
     
-dists, summary_dists = get_distance_points(pairs, bsi_obs, sim_pars, [BSI_max, BSI_max_t])
+dists, summary_dists = get_distance_points(pairs, bsi_obs, sim_pars, [BSI_1, BSI_2, BSI_3, BSI_4, BSI_5, BSI_6, BSI_7, BSI_8, BSI_9, BSI_10, BSI_11, BSI_12, BSI_13, BSI_14]) #[BSI_max, BSI_max_t], [BSI_vector, BSI_max_t, BSI_max]
 
 # Save dists and pairs
 
