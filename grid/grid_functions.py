@@ -270,10 +270,12 @@ def plot_observed_and_simulated_seq(bsi_obs_data, dists, pairs, eps, sim_pars, o
     par2s = acc_pairs[indx, 1]
     
     clade = sim_pars["clade"]
+    dataset = sim_pars["dataset"]
     #output_directory = sim_pars["output_directory"]
     
     bsi_pars = {"or_data":or_data, "clade": sim_pars["clade"], "dataset":sim_pars["dataset"], "theta_c":sim_pars["theta_c"], "theta_bsi":sim_pars["theta_bsi"], "include_I0": sim_pars["include_I0"]}
-
+    
+    
     mean_simseq = SIR_and_BSI_simulator(par1 = np.mean(pairs[np.where(dists< eps)[0],0]),\
                                         par2 = np.mean(pairs[np.where(dists < eps)[0],1]),\
                                         nt = sim_pars["n_weeks"], N = sim_pars["pop_size"],\
@@ -305,6 +307,64 @@ def plot_observed_and_simulated_seq(bsi_obs_data, dists, pairs, eps, sim_pars, o
 
         #plt.plot(simseq[0], color = "lightblue")
         
+    # OR is fixed to or_mu, or_upper or or_lower to visualize uncertainty associated with the odds ratio
+    # deterministic with fixed or_hat values:
+    
+    df = or_data[or_data["Label"] == f'{clade} ({dataset})']
+    or_mu = df["OR"].values
+
+    or_lower = df["lower"].values
+    or_upper = df["upper"].values
+
+    mu_sim = SIR_and_BSI_simulator(np.mean(pairs[np.where(dists< eps)[0],0]), np.mean(pairs[np.where(dists < eps)[0],1]),\
+                                            nt = sim_pars["n_weeks"], N = sim_pars["pop_size"],\
+                                            bsi_pars = bsi_pars,\
+                                            is_prop = sim_pars["is_prop"],\
+                                            is_agg = sim_pars["is_agg"],\
+                                            time_period = sim_pars["time_period"],\
+                                            reparam = sim_pars["reparam"],\
+                                            has_or_hat = True, manual_or_hat = or_mu,\
+                                            batch_size = sim_pars["batch_size"],\
+                                            random_state = sim_pars["random_state"])
+
+    median_sim = SIR_and_BSI_simulator(np.median(acc_pairs[:,0]), np.median(acc_pairs[:,1]),\
+                                            nt = sim_pars["n_weeks"], N = sim_pars["pop_size"],\
+                                            bsi_pars = bsi_pars,\
+                                            is_prop = sim_pars["is_prop"],\
+                                            is_agg = sim_pars["is_agg"],\
+                                            time_period = sim_pars["time_period"],\
+                                            reparam = sim_pars["reparam"],\
+                                            has_or_hat = True, manual_or_hat = or_mu,\
+                                            batch_size = sim_pars["batch_size"],\
+                                            random_state = sim_pars["random_state"])                                       
+
+    lower_sim = SIR_and_BSI_simulator(np.mean(pairs[np.where(dists< eps)[0],0]), np.mean(pairs[np.where(dists < eps)[0],1]),\
+                                            nt = sim_pars["n_weeks"], N = sim_pars["pop_size"],\
+                                            bsi_pars = bsi_pars,\
+                                            is_prop = sim_pars["is_prop"],\
+                                            is_agg = sim_pars["is_agg"],\
+                                            time_period = sim_pars["time_period"],\
+                                            reparam = sim_pars["reparam"],\
+                                            has_or_hat = True, manual_or_hat = or_lower,\
+                                            batch_size = sim_pars["batch_size"],\
+                                            random_state = sim_pars["random_state"])
+
+    upper_sim = SIR_and_BSI_simulator(np.mean(pairs[np.where(dists< eps)[0],0]), np.mean(pairs[np.where(dists < eps)[0],1]),\
+                                            nt = sim_pars["n_weeks"], N = sim_pars["pop_size"],\
+                                            bsi_pars = bsi_pars,\
+                                            is_prop = sim_pars["is_prop"],\
+                                            is_agg = sim_pars["is_agg"],\
+                                            time_period = sim_pars["time_period"],\
+                                            reparam = sim_pars["reparam"],\
+                                            has_or_hat = True, manual_or_hat = or_upper,\
+                                            batch_size = sim_pars["batch_size"],\
+                                            random_state = sim_pars["random_state"])
+   
+    plt.plot(lower_sim[0], color = "lightblue", label = "OR CIs, upper and lower")
+    plt.plot(upper_sim[0], color = "lightblue")
+    plt.plot(mu_sim[0], color = "blue")
+    plt.plot(median_sim[0], color = "pink")
+        
     # Plot the upper and lower bounds for both parameters:
     par1_posterior = acc_pairs[:,0]
     par2_posterior = acc_pairs[:,1]
@@ -327,8 +387,8 @@ def plot_observed_and_simulated_seq(bsi_obs_data, dists, pairs, eps, sim_pars, o
                                    reparam = sim_pars["reparam"], batch_size = sim_pars["batch_size"],\
                                    random_state = sim_pars["random_state"])
 
-    plt.plot(lb_simseq[0], color = "lightblue", linestyle='--')
-    plt.plot(ub_simseq[0], color = "lightblue", linestyle='--')
+    plt.plot(lb_simseq[0], color = "grey", linestyle='--')
+    plt.plot(ub_simseq[0], color = "grey", linestyle='--', label = f"Posterior CIs ({ci}%)")
         
     plt.plot(mean_simseq[0], label = "Simulated mean BSI", color = "blue")
     plt.plot(median_simseq[0], label = "Simulated median BSI", color = "violet")
@@ -360,7 +420,7 @@ def prior_histograms(pairs, output_directory):
     plt.savefig(os.path.join(output_directory, "param_priors.pdf"), format="pdf", bbox_inches="tight")
     plt.show()
     
-def plot_colonization(bsi_obs_data, dists, pairs, eps, sim_pars, output_directory):
+def plot_colonization(bsi_obs_data, dists, pairs, eps, sim_pars, output_directory, ci = 90):
 
     from cluster.scripts.SIR_functions import SIR, prop_to_nSIR
 
@@ -386,7 +446,21 @@ def plot_colonization(bsi_obs_data, dists, pairs, eps, sim_pars, output_director
 
         #plt.plot(colseq[1][0], color = "pink")
         
+    par1_posterior = acc_pairs[:,0]
+    par2_posterior = acc_pairs[:,1]
     
+    par1_bounds = get_bounds(par1_posterior, ci)
+    par2_bounds = get_bounds(par2_posterior, ci)
+    
+    lb_simseq = SIR(par1 = par1_bounds[0], par2 = par2_bounds[0], I0 = I0,\
+                 nt = sim_pars["n_weeks"], N = sim_pars["pop_size"],reparam = sim_pars["reparam"],\
+                 batch_size = sim_pars["batch_size"], random_state = sim_pars["random_state"])
+    ub_simseq = SIR(par1 = par1_bounds[1], par2 = par2_bounds[1], I0 = I0,\
+                 nt = sim_pars["n_weeks"], N = sim_pars["pop_size"],reparam = sim_pars["reparam"],\
+                 batch_size = sim_pars["batch_size"], random_state = sim_pars["random_state"])
+
+    plt.plot(lb_simseq[1][0], color = "pink", linestyle='--')
+    plt.plot(ub_simseq[1][0], color = "pink", linestyle='--')
 
 
     colseq_mean = SIR(par1 = np.mean(pairs[np.where(dists< eps)[0],0]), par2 = np.mean(pairs[np.where(dists< eps)[0],1]), I0 = I0,\
