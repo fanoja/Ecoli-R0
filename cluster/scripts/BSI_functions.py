@@ -23,8 +23,10 @@ def get_OR_hat(or_data, clade = "A", dataset = "NORM", batch_size = 1, random_st
     
     OR_hats = np.empty(batch_size)
     
+    or_sd = 1e12*or_sd
+    
     for b in range(0, batch_size):
-        OR_hat = np.random.normal(or_mu, or_sd, 1) 
+        OR_hat = np.random.normal(or_mu, or_sd, 1) # laita nollaan jos negatiivinen
 
         max_iter = 1000
         i = 0
@@ -52,6 +54,11 @@ def col_to_BSI(SIR, OR_hat, theta_c = 1, theta_bsi = 0.001, is_prop = True, batc
     # population and set theta_c = 1 by default.
     # By changing is_prop = False, can work with counts instead of proportions
     
+    #if isinstance(theta_c, elfi.model.elfi_model.Constant):
+        #theta_c = theta_c.generate(1)
+    #if isinstance(theta_bsi, elfi.model.elfi_model.Constant):
+        #theta_bsi = theta_bsi.generate(1)
+        
     theta_c_a = SIR[1]
     
     if not is_prop: 
@@ -71,6 +78,8 @@ def col_to_BSI(SIR, OR_hat, theta_c = 1, theta_bsi = 0.001, is_prop = True, batc
         #theta_bsi = theta_bsi/52
         
     theta_bsi_a_hat = OR_hat.reshape(-1,1)*theta_c_a*theta_bsi/(theta_c_0 + OR_hat.reshape(-1,1)*theta_c_a)
+    
+    #print(f"Shape of the theta_bsi_a_hat in col_to_BSI {theta_bsi_a_hat.shape}")
     
     return theta_bsi_a_hat
 
@@ -147,7 +156,7 @@ import re
 from cluster.scripts.load_data import *
 
 
-def exp_smoother(bsi, alpha = 0.2):
+def exp_smoother(bsi, alpha = 0.2, batch_size = 1, random_state = None):
     # Assumes an array bsi shaped (batch_size, n_obs)
 
     bs = bsi.shape[0] # batch size.
@@ -158,13 +167,14 @@ def exp_smoother(bsi, alpha = 0.2):
         bsi_filtered[i][0] = x[0] # initialize at first value
         for j in range(1, len(x)):
             bsi_filtered[i][j] = alpha*x[j] + (1-alpha)*bsi_filtered[i][j-1] # Exponential smoothing
-                       
+   
+    #print(f"Shape of bsi_filtered in exp_smoother: {bsi_filtered.shape}")
     return bsi_filtered # returns an array of shape (bs, n_obs)
 
 
-def SIR_and_BSI_simulator(par1, par2, nt, N, bsi_pars, is_prop = False, is_agg = False, time_period = 52, reparam = False, batch_size = 1, random_state = None):
+def SIR_and_BSI_simulator(par1, par2, nt, N, bsi_pars, alpha = 0.2, is_prop = False, is_agg = False, time_period = 52, reparam = False, has_or_hat = False, manual_or_hat = None, batch_size = 1, random_state = None):
     # A simulator function combining both the SIR simulation and the observational model
-    
+    print(alpha)
     cwd = os.getcwd()
 
     if bool(re.search('cluster', cwd)): # a hack to get these loaded from the main directory vs from cluster/
@@ -184,6 +194,11 @@ def SIR_and_BSI_simulator(par1, par2, nt, N, bsi_pars, is_prop = False, is_agg =
         bsi_obs = get_incidence_data("data/NORM_incidence.csv", clade = clade, is_prop = is_prop, n_incidence_pop = N)
     else:
         bsi_obs = get_obs_BSI(df = bsac_data, clade = clade, is_prop = is_prop)
+    
+    if not has_or_hat:
+        or_hat = get_OR_hat(or_data = or_data, clade = clade, dataset = dataset, batch_size = batch_size, random_state = random_state)
+    else:
+        or_hat = manual_or_hat
     
     or_hat = get_OR_hat(or_data = or_data, clade = clade, dataset = dataset, batch_size = batch_size, random_state = random_state)
     
@@ -219,7 +234,7 @@ def SIR_and_BSI_simulator(par1, par2, nt, N, bsi_pars, is_prop = False, is_agg =
         #BSI = max_bsi_per_year(BSI, time_period = 52)
         
     # Exponential smoothing. Comment out to remove:
-    BSI = exp_smoother(BSI)
+    BSI = exp_smoother(BSI, alpha = alpha)
         
     return BSI
 
@@ -247,12 +262,12 @@ def plot_SIR_and_BSI(y, OR_hat):
 def BSI_max_t(y):
     # time to peak/maximum number of bsi cases
     
-    return np.argmax(y)
+    return np.argmax(y[:,], axis = 1)
 
 def BSI_max(y):
     # maximum number of BSI cases
     
-    max_bsi = np.max(y)
+    max_bsi = np.max(y[:,], axis = 1)
     
     return max_bsi#.reshape(-1,1).transpose()
 
@@ -267,43 +282,43 @@ def BSI_vector(y):
 # 13 summaries, one for each year:
 
 def BSI_1(y):
-    return y[0]
+    return y[:,0]
 
 def BSI_2(y):
-    return y[1]
+    return y[:,1]
 
 def BSI_3(y):
-    return y[2]
+    return y[:,2]
 
 def BSI_4(y):
-    return y[3]
+    return y[:,3]
 
 def BSI_5(y):
-    return y[4]
+    return y[:,4]
 
 def BSI_6(y):
-    return y[5]
+    return y[:,5]
 
 def BSI_7(y):
-    return y[6]
+    return y[:,6]
 
 def BSI_8(y):
-    return y[7]
+    return y[:,7]
 
 def BSI_9(y):
-    return y[8]
+    return y[:,8]
 
 def BSI_10(y):
-    return y[9]
+    return y[:,9]
 
 def BSI_11(y):
-    return y[10]
+    return y[:,10]
 
 def BSI_12(y):
-    return y[11]
+    return y[:,11]
 
 def BSI_13(y):
-    return y[12]
+    return y[:,12]
 
 def BSI_14(y):
-    return y[13]
+    return y[:,13]

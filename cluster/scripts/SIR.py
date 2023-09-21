@@ -35,6 +35,24 @@ def SIR(beta, alpha, I0 = 1, R0 = 0, S0 = 9999, N = 10000, T = 100):
         S.append(S[t] + dS(S, I, t, beta, N))
         
     return S, I, R
+
+# TODO: add SIS function
+
+
+def SIS(beta, alpha, I0 = 1, S0 = 9999, N = 10000, T = 100):
+    # Simple SIS model
+    
+    S = [S0]
+    I = [I0]
+    N = [N]*(T - 1) #*(len(T)-1) # Assume a fixed population size over time.
+    
+    for t in range(0, T - 1):
+        
+        # Update SIR model
+        I.append(I[t] + dI(I, S, t, beta, alpha, N))
+        S.append(S[t] + dS(S, I, t, beta, N))
+        
+    return S, I
  
 
 def plotSIR(SIR):
