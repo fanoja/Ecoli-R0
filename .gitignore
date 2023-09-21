@@ -1,3 +1,9 @@
 cluster/logs/*
 cluster/elfi_output/*
 grid/res/*
+.ipynb_checkpoints/*
+grid/.ipynb_checkpoints/*
+data/.ipynb_checkpoints/*
+old_files/.ipynb_checkpoints/*
+res/sim_res/*
+grid/ideas.ipynb
