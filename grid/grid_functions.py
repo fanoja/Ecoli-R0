@@ -174,7 +174,7 @@ def scatter_distance_points(betas, gammas, dists, true_beta = None, true_gamma =
         plt.title(title)
     if save:
         plt.savefig(filename, format="pdf", bbox_inches="tight")
-    plt.show()
+    #plt.show()
     
 def plot_histograms(dists, betas, gammas, eps, par1_label = "Beta", par2_label = "Gamma", xlim = None, save = False, filename = "no_name"):  
     # eps: tolerance. Plot parameter values with distance under this value.
@@ -360,6 +360,7 @@ def plot_observed_and_simulated_seq(bsi_obs_data, dists, pairs, eps, sim_pars, o
                                             batch_size = sim_pars["batch_size"],\
                                             random_state = sim_pars["random_state"])
    
+    print(mu_sim[0,:])
     plt.plot(lower_sim[0], color = "lightblue", label = "OR CIs, upper and lower")
     plt.plot(upper_sim[0], color = "lightblue")
     plt.plot(mu_sim[0], color = "blue")
@@ -390,8 +391,8 @@ def plot_observed_and_simulated_seq(bsi_obs_data, dists, pairs, eps, sim_pars, o
     plt.plot(lb_simseq[0], color = "grey", linestyle='--')
     plt.plot(ub_simseq[0], color = "grey", linestyle='--', label = f"Posterior CIs ({ci}%)")
         
-    plt.plot(mean_simseq[0], label = "Simulated mean BSI", color = "blue")
-    plt.plot(median_simseq[0], label = "Simulated median BSI", color = "violet")
+    #plt.plot(mean_simseq[0], label = "Simulated mean BSI", color = "blue")
+    #plt.plot(median_simseq[0], label = "Simulated median BSI", color = "violet")
     plt.plot(np.array(bsi_obs_data), label = "True BSI", color = "orange")
     plt.legend()
     plt.title(f"Simulated and observed BSI, clade {clade}")
@@ -569,10 +570,11 @@ def visualize_results(output_directory, eps):
 
     # Scaled scatterplot:
     # TODO: generalize this to work with any number of summary statistics
-    
-    for s in range(0, summary_dists.shape[1]):
-        
-        scatter_distance_points(pairs[:,0], pairs[:,1], 1/np.std(summary_dists[:,s])*summary_dists[:,s], true_beta = None, true_gamma = None, ylab = "Gamma", xlab = "Beta", cutoff_upper = eps, cutoff_lower = 0, save = True, filename = os.path.join(output_directory, f"grid_scatter_S{s + 1}_scaled.pdf"), title =  f"S{s + 1}, scaled")
+    plot_summary_scatter = False
+    if plot_summary_scatter:
+        for s in range(0, summary_dists.shape[1]):
+
+            scatter_distance_points(pairs[:,0], pairs[:,1], 1/np.std(summary_dists[:,s])*summary_dists[:,s], true_beta = None, true_gamma = None, ylab = "Gamma", xlab = "Beta", cutoff_upper = eps, cutoff_lower = 0, save = True, filename = os.path.join(output_directory, f"grid_scatter_S{s + 1}_scaled.pdf"), title =  f"S{s + 1}, scaled")
 
     #if summary_dists.shape[1] == 2:
         #scatter_distance_points(pairs[:,0], pairs[:,1], 1/np.std(summary_dists[:,1])*summary_dists[:,1], true_beta = None, true_gamma = None, ylab = "Gamma", xlab = "Beta", cutoff_upper = eps, cutoff_lower = 0, save = True, filename = os.path.join(output_directory, "grid_scatter_S2_scaled.pdf"), title = "S2, scaled")
