@@ -27,10 +27,13 @@ def get_OR_hat(or_data, clade = "A", dataset = "NORM", batch_size = 1, random_st
     
     for b in range(0, batch_size):
         OR_hat = np.random.normal(or_mu, or_sd, 1) # laita nollaan jos negatiivinen
+        
+        if OR_hat < 0:
+            OR_hat = 0
+        #max_iter = 1000
+        #i = 0
 
-        max_iter = 1000
-        i = 0
-
+        """
         while OR_hat[0] < 0:
             OR_hat = np.random.normal(or_mu, or_sd, 1)
             i = i + 1
@@ -42,7 +45,7 @@ def get_OR_hat(or_data, clade = "A", dataset = "NORM", batch_size = 1, random_st
 
         if OR_hat < 0:
             print(f"Warning, negative OR_hat after max iterations!")
-
+        """
         OR_hats[b] = OR_hat
     
     return OR_hats
@@ -80,6 +83,7 @@ def col_to_BSI(SIR, OR_hat, theta_c = 1, theta_bsi = 0.001, is_prop = True, batc
     theta_bsi_a_hat = OR_hat.reshape(-1,1)*theta_c_a*theta_bsi/(theta_c_0 + OR_hat.reshape(-1,1)*theta_c_a)
     
     #print(f"Shape of the theta_bsi_a_hat in col_to_BSI {theta_bsi_a_hat.shape}")
+    theta_bsi_a_hat = np.maximum(theta_bsi_a_hat, 0) # If elements are below zero, force them to be 0.
     
     return theta_bsi_a_hat
 
@@ -137,7 +141,7 @@ def plot_col_to_BSI(SIR, or_data, clade = "A", dataset = "NORM", n_rep = 100, th
         plt.ylabel("Proportion")
     else:
         plt.title(f"Number of BSI cases: Clade {clade}, {dataset}")
-        plt.ylabel("Count")       
+        plt.ylabel("Count")
     plt.legend()
     plt.show()
     

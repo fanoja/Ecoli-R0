@@ -31,7 +31,7 @@ def plot_SIR(SIR):
     
     plt.show()
     
-def check_SIR_nonneg(comp_t, dcomp):
+def check_SIR_nonneg(comp_t, dcomp, is_prop = False):
     # Checks that the new value in this compartment is nonnegative. If not, add zero to comp
     # Check also that no compartment goes over 1
     # Note: This is for proportional SIR!
@@ -42,11 +42,15 @@ def check_SIR_nonneg(comp_t, dcomp):
     comp_t1 = comp_t + dcomp
     
     comp_t1[comp_t1 < 0] = 0 # set negative values to zero
-    comp_t1[comp_t1 > 1] = comp_t[np.where(comp_t1 > 1)] # If any proportion goes above 1 after addition
-    
+    if is_prop:
+        comp_t1[comp_t1 > 1] = comp_t[np.where(comp_t1 > 1)] # If any proportion goes above 1 after addition
+    else:
+        comp_t1[comp_t1 < 1] = 0 # set values less than 1 to zero
     return comp_t1
 
 def SIR(par1, par2, nt, N, I0 = None, reparam = False, batch_size=1, random_state = None):
+    
+    is_prop = False
     
     par1 = np.atleast_1d(par1)
     par2 = np.atleast_1d(par2)
@@ -65,9 +69,10 @@ def SIR(par1, par2, nt, N, I0 = None, reparam = False, batch_size=1, random_stat
     
     thetaR[:,0] = 0
     
-    thetaS[:,0] = thetaS[:,0]/N # recommendation: make S0 the same as N - I0
-    thetaI[:,0] = thetaI[:,0]/N
-    thetaR[:,0] = thetaR[:,0]/N
+    if is_prop:
+        thetaS[:,0] = thetaS[:,0]/N # recommendation: make S0 the same as N - I0
+        thetaI[:,0] = thetaI[:,0]/N
+        thetaR[:,0] = thetaR[:,0]/N
     
     N = np.array([N]*nt)
     
@@ -81,8 +86,8 @@ def SIR(par1, par2, nt, N, I0 = None, reparam = False, batch_size=1, random_stat
     
     for t in range(0, nt-1):
 
-        thetaS[:,t + 1] = check_SIR_nonneg(thetaS[:,t], dS(thetaS, thetaI, t, a, N, is_prop = True))
-        thetaI[:,t + 1] = check_SIR_nonneg(thetaI[:,t], dI(thetaI, thetaS, t, a, b, N, is_prop = True))
+        thetaS[:,t + 1] = check_SIR_nonneg(thetaS[:,t], dS(thetaS, thetaI, t, a, N, is_prop = is_prop))
+        thetaI[:,t + 1] = check_SIR_nonneg(thetaI[:,t], dI(thetaI, thetaS, t, a, b, N, is_prop = is_prop))
         thetaR[:,t + 1] = check_SIR_nonneg(thetaR[:,t], dR(thetaI, t, b))
         
     return thetaS, thetaI, thetaR
