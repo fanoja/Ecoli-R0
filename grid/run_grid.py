@@ -46,6 +46,7 @@ os.mkdir(output_directory)
 # Calculate the distance between simulated and observed sequences in a grid
 
 bsi_pars = {"or_data": or_data, "clade": clade, "dataset": obs_data, "theta_c":theta_c, "theta_bsi":theta_bsi, "include_I0":include_I0} # assume load_data loads or_data, norm_data and bsac_data
+print(bsi_pars)
 sim_pars = {"n_weeks": n_weeks, "pop_size": pop_size, "bsi_pars":bsi_pars, "is_prop":is_prop, "is_agg":is_agg,\
             "time_period":time_period, "reparam":reparam, "batch_size":batch_size, "random_state":random_state}
 
@@ -103,9 +104,9 @@ else: # Use real data
 if reparam:
     pairs = get_nt_R_pairs(n_grid, n_grid)
 else:
-    pairs = get_uniform_beta_gamma_pairs(n_grid, n_grid)#get_valid_beta_gamma_pairs(n_grid, n_grid)
+    pairs = get_valid_beta_gamma_pairs(n_grid, n_grid)#get_uniform_beta_gamma_pairs(n_grid, n_grid)#get_valid_beta_gamma_pairs(n_grid, n_grid)
     
-dists, summary_dists = get_distance_points(pairs, bsi_obs, sim_pars, [BSI_1, BSI_2, BSI_3, BSI_4, BSI_5, BSI_6, BSI_7, BSI_8, BSI_9, BSI_10, BSI_11, BSI_12, BSI_13, BSI_14, BSI_max_t]) #[BSI_max, BSI_max_t], [BSI_vector, BSI_max_t, BSI_max]
+dists, summary_dists = get_distance_points(pairs, bsi_obs, sim_pars, [BSI_1, BSI_2, BSI_3, BSI_4, BSI_5, BSI_6, BSI_7, BSI_8, BSI_9, BSI_10, BSI_11, BSI_12, BSI_13, BSI_14]) #[BSI_max, BSI_max_t], [BSI_vector, BSI_max_t, BSI_max]
 
 # Save dists and pairs
 

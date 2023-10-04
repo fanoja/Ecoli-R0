@@ -193,7 +193,7 @@ def scatter_distance_points(betas, gammas, dists, true_beta = None, true_gamma =
         plt.title(title)
     if save:
         plt.savefig(filename, format="pdf", bbox_inches="tight")
-    #plt.show()
+    plt.show()
     
 def plot_histograms(dists, betas, gammas, eps, par1_label = "Beta", par2_label = "Gamma", xlim = None, save = False, filename = "no_name"):  
     # eps: tolerance. Plot parameter values with distance under this value.
@@ -329,11 +329,15 @@ def plot_observed_and_simulated_seq(bsi_obs_data, dists, pairs, eps, sim_pars, o
     # OR is fixed to or_mu, or_upper or or_lower to visualize uncertainty associated with the odds ratio
     # deterministic with fixed or_hat values:
     
-    df = or_data[or_data["Label"] == f'{clade} ({dataset})']
+    df = or_data[or_data["Label"] == f'{clade} (BSAC)'] #{dataset}
     or_mu = df["OR"].values
+    
+    print(f"Or mu in plot obs sim: {or_mu}")
 
     or_lower = df["lower"].values
     or_upper = df["upper"].values
+    
+    print(f"OR lower: {or_lower}, OR upper: {or_upper}")
 
     mu_sim = SIR_and_BSI_simulator(np.mean(pairs[np.where(dists< eps)[0],0]), np.mean(pairs[np.where(dists < eps)[0],1]),\
                                             nt = sim_pars["n_weeks"], N = sim_pars["pop_size"],\
@@ -345,6 +349,8 @@ def plot_observed_and_simulated_seq(bsi_obs_data, dists, pairs, eps, sim_pars, o
                                             has_or_hat = True, manual_or_hat = or_mu,\
                                             batch_size = sim_pars["batch_size"],\
                                             random_state = sim_pars["random_state"])
+    
+    print(mu_sim)
 
     median_sim = SIR_and_BSI_simulator(np.median(acc_pairs[:,0]), np.median(acc_pairs[:,1]),\
                                             nt = sim_pars["n_weeks"], N = sim_pars["pop_size"],\
@@ -392,20 +398,26 @@ def plot_observed_and_simulated_seq(bsi_obs_data, dists, pairs, eps, sim_pars, o
     par1_bounds = get_bounds(par1_posterior, ci)
     par2_bounds = get_bounds(par2_posterior, ci)
     
+    # NOTE: Or_hat is set to or_mu to get the same uncertainty (otherwise, or_hat is sampled again at each visualization -> visualizations are different every time)
+    # NOTE: if the dashed lines look weird, it is because to boundary parameters generate a weird SIR curve.
     lb_simseq = SIR_and_BSI_simulator(par1 = par1_bounds[0], par2 = par2_bounds[0],\
                                    nt = sim_pars["n_weeks"], N = sim_pars["pop_size"],\
                                    bsi_pars = bsi_pars, is_prop = sim_pars["is_prop"],\
                                    is_agg = sim_pars["is_agg"],\
                                    time_period = sim_pars["time_period"],\
-                                   reparam = sim_pars["reparam"], batch_size = sim_pars["batch_size"],\
+                                   reparam = sim_pars["reparam"],\
+                                      has_or_hat = True, manual_or_hat = or_mu,\
+                                    batch_size = sim_pars["batch_size"],\
                                    random_state = sim_pars["random_state"])
     ub_simseq = SIR_and_BSI_simulator(par1 = par1_bounds[1], par2 = par2_bounds[1],\
-                                   nt = sim_pars["n_weeks"], N = sim_pars["pop_size"],\
-                                   bsi_pars = bsi_pars, is_prop = sim_pars["is_prop"],\
-                                   is_agg = sim_pars["is_agg"],\
-                                   time_period = sim_pars["time_period"],\
-                                   reparam = sim_pars["reparam"], batch_size = sim_pars["batch_size"],\
-                                   random_state = sim_pars["random_state"])
+                                nt = sim_pars["n_weeks"], N = sim_pars["pop_size"],\
+                                bsi_pars = bsi_pars, is_prop = sim_pars["is_prop"],\
+                                is_agg = sim_pars["is_agg"],\
+                                time_period = sim_pars["time_period"],\
+                                reparam = sim_pars["reparam"],\
+                                has_or_hat = True, manual_or_hat = or_mu,\
+                                batch_size = sim_pars["batch_size"],\
+                                random_state = sim_pars["random_state"])
 
     plt.plot(lb_simseq[0], color = "grey", linestyle='--')
     plt.plot(ub_simseq[0], color = "grey", linestyle='--', label = f"Posterior CIs ({ci}%)")
@@ -424,7 +436,9 @@ def plot_observed_and_simulated_seq(bsi_obs_data, dists, pairs, eps, sim_pars, o
 def prior_histograms(pairs, output_directory):
 
     # R0 histogram
-    plt.hist(pairs[:,0]/pairs[:,1])
+    R0 = pairs[:,0]/pairs[:,1]
+    print(R0.shape)
+    plt.hist(R0)
     plt.title("R0 = beta/gamma prior")
     plt.savefig(os.path.join(output_directory, "R0_prior.pdf"), format="pdf", bbox_inches="tight")
     plt.show()
@@ -446,7 +460,7 @@ def plot_colonization(bsi_obs_data, dists, pairs, eps, sim_pars, output_director
 
     if sim_pars["include_I0"]:
         theta_bsi_a_0 = bsi_obs_data.iloc[0]/sim_pars["time_period"]
-        or_hat = get_OR_hat(or_data = or_data, clade = sim_pars["clade"], dataset = sim_pars["dataset"], batch_size = sim_pars["batch_size"], random_state = sim_pars["random_state"])
+        or_hat = get_OR_hat(or_data = or_data, clade = sim_pars["clade"], dataset = "BSAC", batch_size = sim_pars["batch_size"], random_state = sim_pars["random_state"])
         I0 = (theta_bsi_a_0*sim_pars["theta_c"]/(theta_bsi_a_0 + or_hat[0]*sim_pars["theta_bsi"] - theta_bsi_a_0*or_hat[0]))*sim_pars["pop_size"]
     else:
         I0 = None
@@ -474,20 +488,24 @@ def plot_colonization(bsi_obs_data, dists, pairs, eps, sim_pars, output_director
     
     lb_simseq = SIR(par1 = par1_bounds[0], par2 = par2_bounds[0], I0 = I0,\
                  nt = sim_pars["n_weeks"], N = sim_pars["pop_size"],reparam = sim_pars["reparam"],\
+                    is_prop = sim_pars["is_prop"],\
                  batch_size = sim_pars["batch_size"], random_state = sim_pars["random_state"])
     ub_simseq = SIR(par1 = par1_bounds[1], par2 = par2_bounds[1], I0 = I0,\
                  nt = sim_pars["n_weeks"], N = sim_pars["pop_size"],reparam = sim_pars["reparam"],\
+                    is_prop = sim_pars["is_prop"],\
                  batch_size = sim_pars["batch_size"], random_state = sim_pars["random_state"])
 
-    plt.plot(lb_simseq[1][0], color = "pink", linestyle='--')
+    plt.plot(lb_simseq[1][0], color = "pink", linestyle='--', label = f"{ci}% posterior CIs")
     plt.plot(ub_simseq[1][0], color = "pink", linestyle='--')
 
 
     colseq_mean = SIR(par1 = np.mean(pairs[np.where(dists< eps)[0],0]), par2 = np.mean(pairs[np.where(dists< eps)[0],1]), I0 = I0,\
                  nt = sim_pars["n_weeks"], N = sim_pars["pop_size"],reparam = sim_pars["reparam"],\
+                      is_prop = sim_pars["is_prop"],\
                  batch_size = sim_pars["batch_size"], random_state = sim_pars["random_state"])
     colseq_median = SIR(par1 = np.median(pairs[np.where(dists< eps)[0],0]), par2 = np.median(pairs[np.where(dists< eps)[0],1]), I0 = I0,\
                  nt = sim_pars["n_weeks"], N = sim_pars["pop_size"],reparam = sim_pars["reparam"],\
+                        is_prop = sim_pars["is_prop"],\
                  batch_size = sim_pars["batch_size"], random_state = sim_pars["random_state"])
 
     clade = sim_pars["clade"]
@@ -510,6 +528,7 @@ def visualize_results(output_directory, eps):
     
 
     sim_pars = read_sim_pars(output_directory)
+    print(sim_pars)
     clade = sim_pars["clade"]
     
     if sim_pars["dataset"] == "NORM":

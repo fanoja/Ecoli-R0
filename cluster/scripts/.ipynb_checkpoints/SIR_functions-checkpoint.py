@@ -3,6 +3,7 @@
 import numpy as np
     
 def dS(S, I, t, beta, N, is_prop = False):
+    #print(f"dS is_prop: {is_prop}")
     if is_prop:
         #print(f'S[t]: {S[:,t].shape}')
         return -beta*S[:,t]*I[:,t]#.reshape(-1,1)
@@ -42,16 +43,16 @@ def check_SIR_nonneg(comp_t, dcomp, is_prop = False):
     comp_t1 = comp_t + dcomp
     
     comp_t1[comp_t1 < 0] = 0 # set negative values to zero
+    
     if is_prop:
         comp_t1[comp_t1 > 1] = comp_t[np.where(comp_t1 > 1)] # If any proportion goes above 1 after addition
     else:
         comp_t1[comp_t1 < 1] = 0 # set values less than 1 to zero
     return comp_t1
 
-def SIR(par1, par2, nt, N, I0 = None, reparam = False, batch_size=1, random_state = None):
+def SIR(par1, par2, nt, N, I0 = None, reparam = False, is_prop = True, batch_size=1, random_state = None):
     
-    is_prop = False
-    
+    #Wprint(f"is_prop in SIR: {is_prop}")
     par1 = np.atleast_1d(par1)
     par2 = np.atleast_1d(par2)
     batch_size = par1.shape[0]
@@ -76,8 +77,8 @@ def SIR(par1, par2, nt, N, I0 = None, reparam = False, batch_size=1, random_stat
     
     N = np.array([N]*nt)
     
-    if reparam:
-        a = par1/(1 - 1/par2) # par1 = net transmission, par2 = R
+    if reparam: # Lintusaari et al 2016
+        a = par1*par2/(par2-1) #par1/(1 - 1/par2) # par1 = net transmission, par2 = R
         b = par1/(par2 - 1)
     else:
         a = par1
@@ -86,19 +87,19 @@ def SIR(par1, par2, nt, N, I0 = None, reparam = False, batch_size=1, random_stat
     
     for t in range(0, nt-1):
 
-        thetaS[:,t + 1] = check_SIR_nonneg(thetaS[:,t], dS(thetaS, thetaI, t, a, N, is_prop = is_prop))
-        thetaI[:,t + 1] = check_SIR_nonneg(thetaI[:,t], dI(thetaI, thetaS, t, a, b, N, is_prop = is_prop))
-        thetaR[:,t + 1] = check_SIR_nonneg(thetaR[:,t], dR(thetaI, t, b))
+        thetaS[:,t + 1] = check_SIR_nonneg(thetaS[:,t], dS(thetaS, thetaI, t, a, N, is_prop = is_prop), is_prop = is_prop)
+        thetaI[:,t + 1] = check_SIR_nonneg(thetaI[:,t], dI(thetaI, thetaS, t, a, b, N, is_prop = is_prop), is_prop = is_prop)
+        thetaR[:,t + 1] = check_SIR_nonneg(thetaR[:,t], dR(thetaI, t, b), is_prop = is_prop)
         
     return thetaS, thetaI, thetaR
 
 
-def prop_to_nSIR(SIR, N):
+def prop_to_nSIR(SIRsim, N):
     # Convert proportions to counts in a SIR model
     
-    S = SIR[0]
-    I = SIR[1]
-    R = SIR[2]
+    S = SIRsim[0]
+    I = SIRsim[1]
+    R = SIRsim[2]
     
     return S[:,]*N, I[:,]*N, R[:,]*N
 
