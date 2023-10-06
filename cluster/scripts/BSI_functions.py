@@ -298,6 +298,9 @@ def BSI_vector(y):
     
     return y
 
+def BSI_cumsum_quantile(y):
+    
+    return np.quantile(np.cumsum(y[:,]), 0.5)
 
 # 13 summaries, one for each year:
 
