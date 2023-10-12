@@ -89,6 +89,9 @@ def get_valid_beta_gamma_pairs(n_grid, min_R0 = 1.01, max_R0 = 5, min_gamma = 0.
     # Get beta and gamma pairs such that the R0 produced by these parameter pairs are between min_R0 and max_R0.
     # Note: order of beta and gamma matters! Each pair produces a reasonable R0, but I can't guarantee that after reordering beta and gamma this is still the case.
     # Note: the maximum of max_R0 is limited to 5, since earlier runs of this model indicate a relatively small beta parameter.
+    # NOTE: here, I can't guarantee that all combinations betas[i], gammas[j] for any (i, j) will produce a reasonable R0!! Here, solved by generating n_grid**2 pairs.
+    
+    n_grid = n_grid**2 # Quick fix to make the grid larger.
     
     R0_prior = np.random.uniform(min_R0, max_R0, n_grid)
     gammas = np.random.uniform(min_gamma, max_gamma, n_grid)
@@ -99,11 +102,15 @@ def get_valid_beta_gamma_pairs(n_grid, min_R0 = 1.01, max_R0 = 5, min_gamma = 0.
 
     par_mat = np.zeros((n_grid, 2))
     
+    # By using the following two lines, we lose the order of betas and gammas -> not valid prior, can lead to super large R0 values.
+    #par_mat[:,0] = np.repeat(betas, n_grid)
+    #par_mat[:,1] = np.tile(gammas, n_grid)
+    
     for i in range(0, n_grid):
         par_mat[i,0] = betas[i]
         par_mat[i,1] = gammas[i]
     
-    return par_mat
+    return par_mat # (250*250, 2)
 
 def get_nt_R_pairs(n_nt, n_R, nt_range = [0.01,20], R_range = [1.5,8]):
     # nt = net transmission
