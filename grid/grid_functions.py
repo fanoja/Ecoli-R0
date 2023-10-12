@@ -61,7 +61,8 @@ def get_uniform_beta_gamma_pairs(n_beta, n_gamma, min_gamma = 0.001, max_gamma =
     return par_mat
             
     
-def get_valid_beta_gamma_pairs(n_beta, n_gamma, min_gamma = 0.001, max_gamma = 0.1, min_R0 = 1.01, max_R0 = 20):
+def get_valid_beta_gamma_pairs_old(n_beta, n_gamma, min_gamma = 0.001, max_gamma = 0.1, min_R0 = 1.01, max_R0 = 20):
+    # DEPRECATED, see the funciton below.
     # Get pairs of beta and gamma that produce R0 values within [min_R0, max_R0]
     # Returns (n_beta*n_gamma, 2) matrix of (gamma, beta) pairs
     # R = [1.01, 20] From Lintusaari et al 2019
@@ -82,6 +83,26 @@ def get_valid_beta_gamma_pairs(n_beta, n_gamma, min_gamma = 0.001, max_gamma = 0
 
             i += 1
 
+    return par_mat
+
+def get_valid_beta_gamma_pairs(n_grid, min_R0 = 1.01, max_R0 = 5, min_gamma = 0.0001, max_gamma = 0.1):
+    # Get beta and gamma pairs such that the R0 produced by these parameter pairs are between min_R0 and max_R0.
+    # Note: order of beta and gamma matters! Each pair produces a reasonable R0, but I can't guarantee that after reordering beta and gamma this is still the case.
+    # Note: the maximum of max_R0 is limited to 5, since earlier runs of this model indicate a relatively small beta parameter.
+    
+    R0_prior = np.random.uniform(min_R0, max_R0, n_grid)
+    gammas = np.random.uniform(min_gamma, max_gamma, n_grid)
+    betas = np.zeros(n_grid)
+
+    for i in range(0, n_grid):
+        betas[i] = R0_prior[i]*gammas[i]
+
+    par_mat = np.zeros((n_grid, 2))
+    
+    for i in range(0, n_grid):
+        par_mat[i,0] = betas[i]
+        par_mat[i,1] = gammas[i]
+    
     return par_mat
 
 def get_nt_R_pairs(n_nt, n_R, nt_range = [0.01,20], R_range = [1.5,8]):
