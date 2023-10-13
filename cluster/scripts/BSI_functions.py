@@ -4,7 +4,7 @@ import os
     
 print("Loading BSI_functions.py")
 
-grid = False
+grid = True # Change to False if using ELFI and True if using grid
     
 def get_OR_hat_pars(or_data, clade = "A", dataset = "NORM"):
     
@@ -192,6 +192,7 @@ def exp_smoother(bsi, alpha = 0.2, batch_size = 1, random_state = None):
 
 def SIR_and_BSI_simulator(par1, par2, nt, N, bsi_pars, alpha = 0.2, is_prop = True, is_agg = False, time_period = 52, reparam = False, has_or_hat = False, manual_or_hat = None, batch_size = 1, random_state = None):
     # A simulator function combining both the SIR simulation and the observational model
+    # This is used for the grid simulation!!
     
     cwd = os.getcwd()
 
@@ -221,8 +222,16 @@ def SIR_and_BSI_simulator(par1, par2, nt, N, bsi_pars, alpha = 0.2, is_prop = Tr
     #or_hat = get_OR_hat(or_data = or_data, clade = clade, dataset = dataset, batch_size = batch_size, random_state = random_state)
     
     if bsi_pars["include_I0"]:
-        theta_bsi_a_0 = bsi_obs.iloc[0]/time_period
-        I0 = (theta_bsi_a_0*theta_c/(theta_bsi_a_0 + or_hat[0]*theta_bsi - theta_bsi_a_0*or_hat[0]))*N
+        if is_prop:
+            theta_bsi_a_0 = bsi_obs.iloc[0]/time_period
+            I0 = (theta_bsi_a_0*theta_c/(theta_bsi_a_0 + or_hat[0]*theta_bsi - theta_bsi_a_0*or_hat[0]))*N
+        else:
+            #print(bsi_obs.iloc[0])
+            bsi_obs_prop = bsi_obs
+            theta_bsi_a_0 = bsi_obs_prop.iloc[0]/time_period # weekly bsi cases
+            #print(f"theta_bsi_a_0:", theta_bsi_a_0)
+            #print(f"theta_bsi_a_0*N:", theta_bsi_a_0*N)
+            I0 = (theta_bsi_a_0*theta_c/(theta_bsi_a_0 + np.mean(or_hat)*theta_bsi - theta_bsi_a_0*np.mean(or_hat)))
     else:
         I0 = None
     #print(f"theta_bsi_a_0 is {theta_bsi_a_0}")
