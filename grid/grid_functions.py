@@ -237,7 +237,7 @@ def read_sim_pars(filepath):
         for line in lines:
             parts = line.strip().split(': ')
             try:
-                if parts[0] in ["theta_c", "theta_bsi"]:
+                if parts[0] in ["theta_c", "theta_bsi", "true_par1", "true_par2"]:
                     sim_pars[parts[0]] = float(parts[1])
                 else:
                     sim_pars[parts[0]] = int(parts[1])
@@ -613,6 +613,18 @@ def visualize_results(output_directory, eps):
                                       n_incidence_pop = sim_pars["pop_size"])
     else:
         bsi_obs_data = get_obs_BSI(df = bsac_data, clade = sim_pars["clade"], is_prop = sim_pars["is_prop"])
+        
+    if sim_pars["true_par1"] != None: # using synthetic data
+        bsi_pars = {"or_data":or_data, "clade": sim_pars["clade"], "dataset":sim_pars["dataset"], "theta_c":sim_pars["theta_c"], "theta_bsi":sim_pars["theta_bsi"], "include_I0": sim_pars["include_I0"]}
+        clade = sim_pars["clade"]
+        dataset = sim_pars["dataset"]
+        df = or_data[or_data["Label"] == f'{clade} ({dataset})']
+        or_mean = df["OR"]
+        bsi_obs_data = SIR_and_BSI_simulator(sim_pars["true_par1"], sim_pars["true_par2"], nt = sim_pars["n_weeks"], N = sim_pars["pop_size"],\
+                                 bsi_pars = bsi_pars, alpha = 0.2, is_prop = sim_pars["is_prop"],\
+                                 is_agg = sim_pars["is_agg"], time_period = 52, reparam = sim_pars["reparam"], has_or_hat = True,\
+                                 manual_or_hat = np.array(or_mean), batch_size = 1, random_state = None)[0]
+        
 
     print(bsi_obs_data)
     

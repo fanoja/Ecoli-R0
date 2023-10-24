@@ -57,6 +57,9 @@ with open(os.path.join(output_directory, "sim_params.txt"), "w") as f:
             f.write(f"{key}: {value}\n")
     f.write(f"n_grid: {n_grid}\n")
     f.write(f"output_directory: {output_directory}\n")
+    if true_par1 != None & true_par2 != None:
+        f.write(f"true_par1:{true_par1}")
+        f.write(f"true_par2:{true_par2}")
     for key, value in bsi_pars.items():
         if key != "or_data":
             f.write(f"{key}: {value}\n")
@@ -75,7 +78,7 @@ if true_par1 != None:
         plt.title(f"BSI clade {clade}, {obs_data}\n Net transmission = {true_par1}, R = {true_par2}")
     else:
         plt.title(f"BSI clade {clade}, {obs_data}\n Beta = {true_par1}, gamma = {true_par2}")
-    plt.savefig(output_directory + "synthetic_BSI_obs_" + res_id + ".pdf", format="pdf", bbox_inches="tight")
+    plt.savefig(os.path.join(output_directory,"synthetic_BSI_obs.pdf"), format="pdf", bbox_inches="tight")
     #plt.show()
     
     theta_bsi_a_0 = bsi_obs[0][0]
@@ -94,7 +97,7 @@ else: # Use real data
 
     plt.plot(bsi_obs)
     plt.title(f"Real BSI clade: {clade}, dataset: {obs_data}")
-    plt.savefig(output_directory + "/real_BSI_obs_" + res_id + ".pdf", format="pdf", bbox_inches="tight")
+    plt.savefig(os.path.join(output_directory, "real_BSI_obs.pdf"), format="pdf", bbox_inches="tight")
     
     theta_bsi_a_0 = bsi_obs[0] # bsi_obs.iloc[0]
 
