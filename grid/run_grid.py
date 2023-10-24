@@ -106,7 +106,8 @@ if reparam:
 else:
     pairs = get_valid_beta_gamma_pairs(n_grid)#get_uniform_beta_gamma_pairs(n_grid, n_grid)#get_valid_beta_gamma_pairs(n_grid, n_grid)
     
-dists, summary_dists = get_distance_points(pairs, bsi_obs, sim_pars, [BSI_1, BSI_2, BSI_3, BSI_4, BSI_5, BSI_6, BSI_7, BSI_8, BSI_9, BSI_10, BSI_11, BSI_12, BSI_13, BSI_14]) #[BSI_max, BSI_max_t], [BSI_vector, BSI_max_t, BSI_max]
+dists, summary_dists = get_distance_points(pairs, bsi_obs, sim_pars,[BSI_max, BSI_max_t]) #[BSI_max, BSI_max_t], [BSI_vector, BSI_max_t, BSI_max]
+# [BSI_1, BSI_2, BSI_3, BSI_4, BSI_5, BSI_6, BSI_7, BSI_8, BSI_9, BSI_10, BSI_11, BSI_12, BSI_13, BSI_14]
 
 # Save dists and pairs
 

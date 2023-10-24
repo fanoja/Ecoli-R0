@@ -85,30 +85,25 @@ def get_valid_beta_gamma_pairs_old(n_beta, n_gamma, min_gamma = 0.001, max_gamma
 
     return par_mat
 
-def get_valid_beta_gamma_pairs(n_grid, min_R0 = 1.01, max_R0 = 5, min_gamma = 0.0001, max_gamma = 0.1):
+def get_valid_beta_gamma_pairs(n_grid, min_R0 = 1.01, max_R0 = 8, min_gamma = 0.0001, max_gamma = 0.1):
     # Get beta and gamma pairs such that the R0 produced by these parameter pairs are between min_R0 and max_R0.
     # Note: order of beta and gamma matters! Each pair produces a reasonable R0, but I can't guarantee that after reordering beta and gamma this is still the case.
     # Note: the maximum of max_R0 is limited to 5, since earlier runs of this model indicate a relatively small beta parameter.
     # NOTE: here, I can't guarantee that all combinations betas[i], gammas[j] for any (i, j) will produce a reasonable R0!! Here, solved by generating n_grid**2 pairs.
     
-    n_grid = n_grid**2 # Quick fix to make the grid larger.
-    
     R0_prior = np.random.uniform(min_R0, max_R0, n_grid)
     gammas = np.random.uniform(min_gamma, max_gamma, n_grid)
-    betas = np.zeros(n_grid)
-
-    for i in range(0, n_grid):
-        betas[i] = R0_prior[i]*gammas[i]
+    betas = np.random.uniform(min_R0*min_gamma, max_R0*max_gamma, n_grid)
+    betas = R0_prior*gammas # Triangle-like prior
+    #betas = np.zeros(n_grid)
 
     par_mat = np.zeros((n_grid, 2))
+    par_mat[:,0] = betas
+    par_mat[:,1] = gammas
     
     # By using the following two lines, we lose the order of betas and gammas -> not valid prior, can lead to super large R0 values.
     #par_mat[:,0] = np.repeat(betas, n_grid)
     #par_mat[:,1] = np.tile(gammas, n_grid)
-    
-    for i in range(0, n_grid):
-        par_mat[i,0] = betas[i]
-        par_mat[i,1] = gammas[i]
     
     return par_mat # (250*250, 2)
 
@@ -179,7 +174,55 @@ def get_distance_points(pairs, bsi_obs, sim_pars, summaries):
         
     return dists, summary_dists
   
+def get_distance_points_alt_slow(pairs, bsi_obs, sim_pars, summaries):
+    # Calculates distances between given pairs of gamma, beta parameters for the summaries of interest
+    # pairs: matrix of size (n_gamma*n_beta,2), where the first column holds the gamma values and the 2nd column has the beta values
+    # Returns a tuple of (betas, gammas, dists)
+    # THIS IS NOT COMPUTATIONALLY FEASIBLE. Don't run.
+    
+    dists = np.zeros((pairs.shape[0], pairs.shape[0]))
+    summary_dists = np.zeros((pairs.shape[0],pairs.shape[0], len(summaries)))
+    
+    for i in range(0, pairs.shape[0]):
+        if i%1000 == 0:
+            print("Par:", i)
+            
+        for j in range(0, pairs.shape[0]):
+        
 
+
+            par1 = pairs[i,0] # beta
+            par2 = pairs[j,1] # gamma
+
+            #print(gamma, beta)
+
+            # simulate a sequence
+
+            sim_seq = SIR_and_BSI_simulator(par1 = par1, par2 = par2, nt = sim_pars["n_weeks"], N = sim_pars["pop_size"], bsi_pars = sim_pars["bsi_pars"],\
+                                            is_prop = sim_pars["is_prop"], is_agg = sim_pars["is_agg"], time_period = sim_pars["time_period"],\
+                                            reparam = sim_pars["reparam"], batch_size = sim_pars["batch_size"], random_state = sim_pars["random_state"])[0]
+
+            k = 0
+            for summary in summaries:
+                summary_dists[i,j,k] = np.sum((summary(bsi_obs) - summary(sim_seq))**2)
+                k += 1
+
+
+    for k in range(0, len(summaries)):
+
+        #d = (summary(bsi_obs) - summary(sim_seq))**2
+        SD = np.std(summary_dists[:,k])
+
+        if SD == 0:
+            print("Warning! SD is zero. Summary", summary)
+            SD = 1 # TODO: what to do in this case? 
+
+        dists += 1/SD*summary_dists[:,k]
+
+    dists = np.sqrt(dists)
+        
+        
+    return dists, summary_dists
 ## Visualization ##
 
 def read_sim_pars(filepath):
@@ -208,7 +251,9 @@ def read_sim_pars(filepath):
 
 def scatter_distance_points(betas, gammas, dists, true_beta = None, true_gamma = None, ylab = "Gamma", xlab = "Beta", cutoff_upper = 1, cutoff_lower = 0, save = False, filename = "no_name", title = None):
     
-    sc = plt.scatter(betas, gammas, c = dists, s = 1)
+    mask = np.where(dists < cutoff_upper)[0]
+    
+    sc = plt.scatter(betas[mask], gammas[mask], c = dists[mask], s = 1)
     if true_gamma != None and true_beta != None:
         plt.scatter(true_beta, true_gamma, c= "red", marker = "X")
         
@@ -216,7 +261,7 @@ def scatter_distance_points(betas, gammas, dists, true_beta = None, true_gamma =
     plt.ylabel(ylab)
     plt.colorbar(sc)
     sc.set_cmap('viridis') # 'plasma'
-    sc.set_clim(cutoff_lower, cutoff_upper)
+    #sc.set_clim(cutoff_lower, cutoff_upper)
     if title != None:
         plt.title(title)
     if save:
@@ -489,7 +534,10 @@ def plot_colonization(bsi_obs_data, dists, pairs, eps, sim_pars, output_director
     if sim_pars["include_I0"]:
         theta_bsi_a_0 = bsi_obs_data.iloc[0]/sim_pars["time_period"]
         or_hat = get_OR_hat(or_data = or_data, clade = sim_pars["clade"], dataset = "BSAC", batch_size = sim_pars["batch_size"], random_state = sim_pars["random_state"])
-        I0 = (theta_bsi_a_0*sim_pars["theta_c"]/(theta_bsi_a_0 + or_hat[0]*sim_pars["theta_bsi"] - theta_bsi_a_0*or_hat[0]))*sim_pars["pop_size"]
+        if sim_pars["is_prop"]:
+            I0 = (theta_bsi_a_0*sim_pars["theta_c"]/(theta_bsi_a_0 + or_hat[0]*sim_pars["theta_bsi"] - theta_bsi_a_0*or_hat[0]))*sim_pars["pop_size"]
+        else:
+            I0 = (theta_bsi_a_0*sim_pars["theta_c"]/(theta_bsi_a_0 + or_hat[0]*sim_pars["theta_bsi"] - theta_bsi_a_0*or_hat[0]))
     else:
         I0 = None
 

@@ -13,5 +13,5 @@ theta_bsi = 0.00002/time_period
 random_state = None
 batch_size = 1
 r_id = "obs_NORM_A_no_I0" # id to be added to the name of the figures/saved distance matrices
-n_grid = 250 # number of parameter pairs to simulate
+n_grid = 100 # number of parameter pairs to simulate
 include_I0 = False # Wether or not to include I0
