@@ -1,8 +1,0 @@
-#!/bin/bash -l
-#SBATCH --time=01:00:00
-#SBATCH --cpus-per-task=2
-#SBATCH --mem=4G
-
-conda activate ecoli-elfi
-
-python3 run_grid.py
