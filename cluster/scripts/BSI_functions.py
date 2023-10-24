@@ -262,7 +262,7 @@ def SIR_and_BSI_simulator(par1, par2, nt, N, bsi_pars, alpha = 0.2, is_prop = Tr
         #BSI = max_bsi_per_year(BSI, time_period = 52)
         
     # Exponential smoothing. Comment out to remove:
-    BSI = exp_smoother(BSI, alpha = alpha)
+    #BSI = exp_smoother(BSI, alpha = alpha)
         
     return BSI
 
