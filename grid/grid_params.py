@@ -1,6 +1,6 @@
 pop_size = 1000000
 n_weeks = 14*52
-clade = "C2"
+clade = "A"
 obs_data = "NORM"
 true_par1 = None
 true_par2 = None
@@ -12,6 +12,6 @@ time_period = 52
 theta_bsi = 1.2490477151025643e-05
 random_state = None
 batch_size = 1
-r_id = "obs_NORM_C2" # id to be added to the name of the figures/saved distance matrices
+r_id = "obs_NORM_A" # id to be added to the name of the figures/saved distance matrices
 n_grid = 20000 # number of parameter pairs to simulate
 include_I0 = False # Wether or not to include I0
