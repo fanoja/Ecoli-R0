@@ -11,7 +11,12 @@ def get_OR_hat_pars(or_data, clade = "A", dataset = "NORM"):
     dataset = "BSAC"
     df = or_data[or_data["Label"] == f'{clade} ({dataset})']
     or_mu = df["OR"]
-    or_sd = (df["upper"] - df["lower"])/2
+    
+    # Fix this with adjustment by sqrt(n) as demonstrated in Explaining Odds Ratios
+    
+    n_sqrt = np.sqrt(1/df['carriage_nonPP'] + 1/df['Disease_nonPP'] + 1/df["carriage_PP"] + 1/df["Disease_PP"])
+    z = 1.96
+    or_sd = (df["upper"] - df["lower"])/(2*z*n_sqrt)
     
     return or_mu, or_sd
     
@@ -254,7 +259,7 @@ def SIR_and_BSI_simulator(par1, par2, nt, N, bsi_pars, alpha = 0.2, is_prop = Tr
 
     
     #or_hat = get_OR_hat(or_data, clade, dataset, batch_size = batch_size, random_state = random_state)
-    
+    #print(f"OR hat in col_to_BSI: {or_hat}")
     BSI = col_to_BSI(SIRsim, or_hat, theta_c = theta_c, theta_bsi = theta_bsi, is_prop = is_prop)
     
     if is_agg:
