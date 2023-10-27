@@ -280,22 +280,22 @@ def plot_histograms(dists, betas, gammas, eps, par1_label = "Beta", par2_label =
         plt.savefig(filename, format="pdf", bbox_inches="tight")
     plt.show()
     
-def plot_posterior_scatterplot(summary_dists, pairs, dists, eps, output_directory):
+def plot_posterior_scatterplot(summary_dists, pairs, dists, eps, output_directory, par1_label = "Beta", par2_label = "Gamma"):
     # Plot a scatterplot of the posterior parameters and their joint distributions
     
     acc_pairs = pairs[np.where(dists< eps)[0],:]
     
     fig, axs = plt.subplots(2, 2)
     axs[0,0].hist(acc_pairs[:,0])
-    axs[0,0].set_ylabel("Par1: Beta or nt")
-    axs[0,1].scatter(acc_pairs[:,0], acc_pairs[:,1])
+    axs[0,0].set_ylabel(f"{par1_label}")
+    axs[0,1].scatter(acc_pairs[:,1], acc_pairs[:,0])
     #axs[0,1].set_ylabel("Beta")
     #axs[0,1].set_xlabel("Gamma")
-    axs[1,0].scatter(acc_pairs[:,1], acc_pairs[:,0])
-    axs[1,0].set_ylabel("Par2: Gamma or R")
-    axs[1,0].set_xlabel("Par1: Beta or nt")
+    axs[1,0].scatter(acc_pairs[:,0], acc_pairs[:,1])
+    axs[1,0].set_ylabel(f"{par2_label}")
+    axs[1,0].set_xlabel(f"{par1_label}")
     axs[1,1].hist(acc_pairs[:,1])
-    axs[1,1].set_xlabel("Par2: Gamma or R")
+    axs[1,1].set_xlabel(f"{par2_label}")
     axs[0,0].set_title(f"Posterior, tolerance: {eps}")
     plt.tight_layout()
     plt.savefig(os.path.join(output_directory, "posterior_plots.pdf"), format="pdf", bbox_inches="tight")
@@ -605,6 +605,13 @@ def visualize_results(output_directory, eps):
     print(sim_pars)
     clade = sim_pars["clade"]
     
+    if sim_pars["reparam"]:
+        par1_label = "Net transmission"
+        par2_label = "R"
+    else:
+        par1_label = "Beta"
+        par2_label = "Gamma"
+    
     if sim_pars["dataset"] == "NORM":
         bsi_obs_data = get_incidence_data("data/NORM_incidence.csv", clade = sim_pars["clade"],\
                                       is_prop = sim_pars["is_prop"],\
@@ -656,11 +663,7 @@ def visualize_results(output_directory, eps):
         print(f"R = median(beta/gamma): {np.median(pairs[np.where(dists < eps)[0],0]/pairs[np.where(dists < eps)[0],1])}")
         #print(f"True parameters (for synthetic data): beta = {true_par1}, gamma = {true_par2}")
     
-    if not sim_pars["reparam"]:
-        plot_histograms(dists, pairs[:,0], pairs[:,1], eps, save = True,\
-                    filename = os.path.join(output_directory, "param_histograms.pdf"))
-    else:
-        plot_histograms(dists, pairs[:,0], pairs[:,1], eps, par1_label = "nt", par2_label = "R", save = True,\
+    plot_histograms(dists, pairs[:,0], pairs[:,1], eps, par1_label = par1_label, par2_label = par2_label, save = True,\
                     filename = os.path.join(output_directory, "param_histograms.pdf"))
     
     
@@ -677,7 +680,8 @@ def visualize_results(output_directory, eps):
     
     ## Posterior distribution (distribution of accepted parameters as a joint distribution in addition to the histograms)
     
-    plot_posterior_scatterplot(summary_dists, pairs, dists, eps, output_directory)
+    plot_posterior_scatterplot(summary_dists, pairs, dists, eps, output_directory, par1_label = par1_label, par2_label = par2_label)
+        
     
     ## Observed and simulated data
                     
@@ -692,6 +696,7 @@ def visualize_results(output_directory, eps):
     ## Scatterplot of parameter pairs
     
     scatter_distance_points(pairs[:,0], pairs[:,1], dists, true_beta = None, true_gamma = None,\
+                            xlab = par1_label, ylab = par2_label,\
                         save = True, filename = os.path.join(output_directory, "grid_scatter.pdf"),\
                             cutoff_upper = eps, cutoff_lower = 0)
     
@@ -711,7 +716,7 @@ def visualize_results(output_directory, eps):
     if plot_summary_scatter:
         for s in range(0, summary_dists.shape[1]):
 
-            scatter_distance_points(pairs[:,0], pairs[:,1], 1/np.std(summary_dists[:,s])*summary_dists[:,s], true_beta = None, true_gamma = None, ylab = "Gamma", xlab = "Beta", cutoff_upper = eps, cutoff_lower = 0, save = True, filename = os.path.join(output_directory, f"grid_scatter_S{s + 1}_scaled.pdf"), title =  f"S{s + 1}, scaled")
+            scatter_distance_points(pairs[:,0], pairs[:,1], 1/np.std(summary_dists[:,s])*summary_dists[:,s], true_beta = None, true_gamma = None, ylab = par1_label, xlab = par2_label, cutoff_upper = eps, cutoff_lower = 0, save = True, filename = os.path.join(output_directory, f"grid_scatter_S{s + 1}_scaled.pdf"), title =  f"S{s + 1}, scaled")
 
     #if summary_dists.shape[1] == 2:
         #scatter_distance_points(pairs[:,0], pairs[:,1], 1/np.std(summary_dists[:,1])*summary_dists[:,1], true_beta = None, true_gamma = None, ylab = "Gamma", xlab = "Beta", cutoff_upper = eps, cutoff_lower = 0, save = True, filename = os.path.join(output_directory, "grid_scatter_S2_scaled.pdf"), title = "S2, scaled")
@@ -731,11 +736,8 @@ def visualize_results(output_directory, eps):
     
     
     ## Prior histograms:
-    
-    if not sim_pars["reparam"]:
-        prior_histograms(pairs, output_directory, reparam = sim_pars["reparam"])
-    else:
-        prior_histograms(pairs, output_directory, reparam = sim_pars["reparam"], par1_label = "Net transmission", par2_label = "R")
+
+    prior_histograms(pairs, output_directory, reparam = sim_pars["reparam"], par1_label = par1_label, par2_label = par2_label)
 
     
 ### Utility functions ###
