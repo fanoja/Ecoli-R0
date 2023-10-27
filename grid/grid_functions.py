@@ -107,24 +107,17 @@ def get_valid_beta_gamma_pairs(n_grid, min_R0 = 1.01, max_R0 = 5, min_gamma = 0.
     
     return par_mat # (250*250, 2)
 
-def get_nt_R_pairs(n_nt, n_R, nt_range = [0.01,20], R_range = [1.5,8]):
+def get_nt_R_pairs(n_grid, nt_range = [0.03, 0.5], R_range = [1.01,5]):
     # nt = net transmission
     
-    pairs = np.zeros((n_nt*n_R, 2))
+    pairs = np.zeros((n_grid, 2))
     
-    R = np.linspace(R_range[0], R_range[1], n_R)
-    nt = np.linspace(nt_range[0], nt_range[1], n_nt)
+    R = np.random.uniform(R_range[0], R_range[1], n_grid)
+    nt = np.random.uniform(nt_range[0], nt_range[1], n_grid)
     
-    count = 0
-    for i in range(0, n_nt):
-
-        for j in range(0, n_R):
-            
-            pairs[count, 0] = nt[i]
-            pairs[count, 1] = R[j]
-            
-            count += 1
-            
+    pairs[:,0] = nt
+    pairs[:,1] = R
+    
     return pairs
 
 #par1, par2, nt, N, bsi_pars, I0 = None, is_prop = False, is_agg = False, time_period = 52, reparam = False, batch_size = 1, random_state = None
@@ -294,15 +287,15 @@ def plot_posterior_scatterplot(summary_dists, pairs, dists, eps, output_director
     
     fig, axs = plt.subplots(2, 2)
     axs[0,0].hist(acc_pairs[:,0])
-    axs[0,0].set_ylabel("Beta")
+    axs[0,0].set_ylabel("Par1: Beta or nt")
     axs[0,1].scatter(acc_pairs[:,0], acc_pairs[:,1])
     #axs[0,1].set_ylabel("Beta")
     #axs[0,1].set_xlabel("Gamma")
     axs[1,0].scatter(acc_pairs[:,1], acc_pairs[:,0])
-    axs[1,0].set_ylabel("Gamma")
-    axs[1,0].set_xlabel("Beta")
+    axs[1,0].set_ylabel("Par2: Gamma or R")
+    axs[1,0].set_xlabel("Par1: Beta or nt")
     axs[1,1].hist(acc_pairs[:,1])
-    axs[1,1].set_xlabel("Gamma")
+    axs[1,1].set_xlabel("Par2: Gamma or R")
     axs[0,0].set_title(f"Posterior, tolerance: {eps}")
     plt.tight_layout()
     plt.savefig(os.path.join(output_directory, "posterior_plots.pdf"), format="pdf", bbox_inches="tight")
@@ -509,23 +502,25 @@ def plot_observed_and_simulated_seq(bsi_obs_data, dists, pairs, eps, sim_pars, o
     plt.show()
     
     
-def prior_histograms(pairs, output_directory):
+def prior_histograms(pairs, output_directory, reparam = False, par1_label = "Beta", par2_label = "Gamma"):
 
     # R0 histogram
-    R0 = pairs[:,0]/pairs[:,1]
-    print(R0.shape)
-    plt.hist(R0)
-    plt.title("R0 = beta/gamma prior")
-    plt.savefig(os.path.join(output_directory, "R0_prior.pdf"), format="pdf", bbox_inches="tight")
-    plt.show()
+    
+    if not reparam:
+        R0 = pairs[:,0]/pairs[:,1]
+        print(R0.shape)
+        plt.hist(R0)
+        plt.title("R0 = beta/gamma prior")
+        plt.savefig(os.path.join(output_directory, "R0_prior.pdf"), format="pdf", bbox_inches="tight")
+        plt.show()
     
     # beta/gamma histogram
     fig, axs = plt.subplots(1, 2)
     axs[0].hist(pairs[:,0])
     axs[1].hist(pairs[:,1])
     #axs[2].hist(pairs[:,0]/pairs[:,1])
-    axs[0].set_title(f"Par1 (beta) prior")
-    axs[1].set_title(f"Par2 (gamma) prior")
+    axs[0].set_title(f"{par1_label} prior")
+    axs[1].set_title(f"{par2_label} prior")
     #axs[2].set_title(f"R0 prior")
     plt.savefig(os.path.join(output_directory, "param_priors.pdf"), format="pdf", bbox_inches="tight")
     plt.show()
@@ -653,24 +648,31 @@ def visualize_results(output_directory, eps):
     
     ## Parameter histograms
                 
-    print(f"Beta mean: {np.mean(pairs[np.where(dists< eps)[0],0])}")
-    print(f"Gamma mean: {np.mean(pairs[np.where(dists < eps)[0],1])}")
-    print(f"R = mean(beta/gamma): {np.mean(pairs[np.where(dists < eps)[0],0]/pairs[np.where(dists < eps)[0],1])}")
-    print(f"R = median(beta/gamma): {np.median(pairs[np.where(dists < eps)[0],0]/pairs[np.where(dists < eps)[0],1])}")
-    #print(f"True parameters (for synthetic data): beta = {true_par1}, gamma = {true_par2}")
-                
-    plot_histograms(dists, pairs[:,0], pairs[:,1], eps, save = True,\
+    print(f"Beta or nt mean: {np.mean(pairs[np.where(dists< eps)[0],0])}")
+    print(f"Gamma or R mean: {np.mean(pairs[np.where(dists < eps)[0],1])}")
+    
+    if not sim_pars["reparam"]:
+        print(f"R = mean(beta/gamma): {np.mean(pairs[np.where(dists < eps)[0],0]/pairs[np.where(dists < eps)[0],1])}")
+        print(f"R = median(beta/gamma): {np.median(pairs[np.where(dists < eps)[0],0]/pairs[np.where(dists < eps)[0],1])}")
+        #print(f"True parameters (for synthetic data): beta = {true_par1}, gamma = {true_par2}")
+    
+    if not sim_pars["reparam"]:
+        plot_histograms(dists, pairs[:,0], pairs[:,1], eps, save = True,\
+                    filename = os.path.join(output_directory, "param_histograms.pdf"))
+    else:
+        plot_histograms(dists, pairs[:,0], pairs[:,1], eps, par1_label = "nt", par2_label = "R", save = True,\
                     filename = os.path.join(output_directory, "param_histograms.pdf"))
     
     
     # Plot a histogram of R:
     
-    ind = np.where(dists < eps)[0]
-    plt.hist(pairs[np.where(dists < eps)[0],0]/pairs[np.where(dists < eps)[0],1])
-    plt.title(f"R0, tolerance: {eps}")
-    plt.xlabel("R0")
-    plt.savefig(os.path.join(output_directory, "R0_hist.pdf"), format="pdf", bbox_inches="tight")
-    plt.show()
+    if not sim_pars["reparam"]:
+        ind = np.where(dists < eps)[0]
+        plt.hist(pairs[np.where(dists < eps)[0],0]/pairs[np.where(dists < eps)[0],1])
+        plt.title(f"R0, tolerance: {eps}")
+        plt.xlabel("R0")
+        plt.savefig(os.path.join(output_directory, "R0_hist.pdf"), format="pdf", bbox_inches="tight")
+        plt.show()
     
     
     ## Posterior distribution (distribution of accepted parameters as a joint distribution in addition to the histograms)
@@ -730,7 +732,10 @@ def visualize_results(output_directory, eps):
     
     ## Prior histograms:
     
-    prior_histograms(pairs, output_directory)
+    if not sim_pars["reparam"]:
+        prior_histograms(pairs, output_directory, reparam = sim_pars["reparam"])
+    else:
+        prior_histograms(pairs, output_directory, reparam = sim_pars["reparam"], par1_label = "Net transmission", par2_label = "R")
 
     
 ### Utility functions ###

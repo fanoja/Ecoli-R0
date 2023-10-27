@@ -105,7 +105,8 @@ else: # Use real data
 # Run the simulation
 
 if reparam:
-    pairs = get_nt_R_pairs(n_grid, n_grid)
+    print("Reparametrized model. Getting (R, nt) pairs")
+    pairs = get_nt_R_pairs(n_grid)
 else:
     pairs = get_valid_beta_gamma_pairs(n_grid)#get_uniform_beta_gamma_pairs(n_grid, n_grid)#get_valid_beta_gamma_pairs(n_grid, n_grid)
     
