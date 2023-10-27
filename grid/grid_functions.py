@@ -61,7 +61,7 @@ def get_uniform_beta_gamma_pairs(n_beta, n_gamma, min_gamma = 0.001, max_gamma =
     return par_mat
             
     
-def get_valid_beta_gamma_pairs_old(n_beta, n_gamma, min_gamma = 0.001, max_gamma = 0.1, min_R0 = 1.01, max_R0 = 20):
+def get_valid_beta_gamma_pairs_old(n_beta, n_gamma, min_gamma = 0.001, max_gamma = 0.2, min_R0 = 1.01, max_R0 = 20):
     # DEPRECATED, see the funciton below.
     # Get pairs of beta and gamma that produce R0 values within [min_R0, max_R0]
     # Returns (n_beta*n_gamma, 2) matrix of (gamma, beta) pairs
@@ -80,12 +80,12 @@ def get_valid_beta_gamma_pairs_old(n_beta, n_gamma, min_gamma = 0.001, max_gamma
         for b in range(0, n_beta):
             par_mat[i,0] = potential_betas[b]
             par_mat[i,1] = gamma
-
+                            
             i += 1
 
     return par_mat
 
-def get_valid_beta_gamma_pairs(n_grid, min_R0 = 1.01, max_R0 = 8, min_gamma = 0.0001, max_gamma = 0.1):
+def get_valid_beta_gamma_pairs(n_grid, min_R0 = 1.01, max_R0 = 5, min_gamma = 0.0001, max_gamma = 0.2):
     # Get beta and gamma pairs such that the R0 produced by these parameter pairs are between min_R0 and max_R0.
     # Note: order of beta and gamma matters! Each pair produces a reasonable R0, but I can't guarantee that after reordering beta and gamma this is still the case.
     # Note: the maximum of max_R0 is limited to 5, since earlier runs of this model indicate a relatively small beta parameter.
@@ -253,7 +253,7 @@ def scatter_distance_points(betas, gammas, dists, true_beta = None, true_gamma =
     
     mask = np.where(dists < cutoff_upper)[0]
     
-    sc = plt.scatter(betas[mask], gammas[mask], c = dists[mask], s = 1)
+    sc = plt.scatter(betas[mask], gammas[mask], c = dists[mask], s = 2)
     if true_gamma != None and true_beta != None:
         plt.scatter(true_beta, true_gamma, c= "red", marker = "X")
         
@@ -366,6 +366,8 @@ def plot_observed_and_simulated_seq(bsi_obs_data, dists, pairs, eps, sim_pars, o
     #output_directory = sim_pars["output_directory"]
     
     bsi_pars = {"or_data":or_data, "clade": sim_pars["clade"], "dataset":sim_pars["dataset"], "theta_c":sim_pars["theta_c"], "theta_bsi":sim_pars["theta_bsi"], "include_I0": sim_pars["include_I0"]}
+    print("Plotting function, BSI parameters:")
+    print(bsi_pars)
     
     
     mean_simseq = SIR_and_BSI_simulator(par1 = np.mean(pairs[np.where(dists< eps)[0],0]),\
@@ -411,7 +413,8 @@ def plot_observed_and_simulated_seq(bsi_obs_data, dists, pairs, eps, sim_pars, o
     or_upper = df["upper"].values
     
     print(f"OR lower: {or_lower}, OR upper: {or_upper}")
-
+    
+    print(f"Plotting obs and simulated, mean par1 {np.mean(pairs[np.where(dists< eps)[0],0])} and mean par2 {np.mean(pairs[np.where(dists < eps)[0],1])}")
     mu_sim = SIR_and_BSI_simulator(np.mean(pairs[np.where(dists< eps)[0],0]), np.mean(pairs[np.where(dists < eps)[0],1]),\
                                             nt = sim_pars["n_weeks"], N = sim_pars["pop_size"],\
                                             bsi_pars = bsi_pars,\
@@ -613,19 +616,25 @@ def visualize_results(output_directory, eps):
                                       n_incidence_pop = sim_pars["pop_size"])
     else:
         bsi_obs_data = get_obs_BSI(df = bsac_data, clade = sim_pars["clade"], is_prop = sim_pars["is_prop"])
-        
-    if sim_pars["true_par1"] != None: # using synthetic data
-        bsi_pars = {"or_data":or_data, "clade": sim_pars["clade"], "dataset":sim_pars["dataset"], "theta_c":sim_pars["theta_c"], "theta_bsi":sim_pars["theta_bsi"], "include_I0": sim_pars["include_I0"]}
-        clade = sim_pars["clade"]
-        dataset = sim_pars["dataset"]
-        df = or_data[or_data["Label"] == f'{clade} ({dataset})']
-        or_mean = df["OR"]
-        bsi_obs_data = SIR_and_BSI_simulator(sim_pars["true_par1"], sim_pars["true_par2"], nt = sim_pars["n_weeks"], N = sim_pars["pop_size"],\
-                                 bsi_pars = bsi_pars, alpha = 0.2, is_prop = sim_pars["is_prop"],\
-                                 is_agg = sim_pars["is_agg"], time_period = 52, reparam = sim_pars["reparam"], has_or_hat = True,\
-                                 manual_or_hat = np.array(or_mean), batch_size = 1, random_state = None)[0]
-        
+    
+    try:
+        if sim_pars["true_par1"] != None: # using synthetic data
+            bsi_pars = {"or_data":or_data, "clade": sim_pars["clade"], "dataset":sim_pars["dataset"], "theta_c":sim_pars["theta_c"], "theta_bsi":sim_pars["theta_bsi"], "include_I0": sim_pars["include_I0"]}
+            clade = sim_pars["clade"]
+            dataset = sim_pars["dataset"]
+            df = or_data[or_data["Label"] == f'{clade} (BSAC)']
+            or_mean = df["OR"].values
 
+            print(f"Visualize results sim_pars is_agg: {sim_pars['is_agg']}")
+            print(or_mean)
+            bsi_obs_data = SIR_and_BSI_simulator(sim_pars["true_par1"], sim_pars["true_par2"], nt = sim_pars["n_weeks"], N = sim_pars["pop_size"],\
+                                     bsi_pars = bsi_pars, alpha = 0.2, is_prop = sim_pars["is_prop"],\
+                                     is_agg = sim_pars["is_agg"], time_period = 52, reparam = sim_pars["reparam"], has_or_hat = True,\
+                                     manual_or_hat = or_mean, batch_size = 1, random_state = None)[0]
+    except KeyError:
+        print("KeyError: Synthetic data not available, using observed data")
+        
+    print("bsi_obs_data in visualize_results")
     print(bsi_obs_data)
     
     # Load distance matrix and the parameter pairs:

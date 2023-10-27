@@ -57,7 +57,7 @@ with open(os.path.join(output_directory, "sim_params.txt"), "w") as f:
             f.write(f"{key}: {value}\n")
     f.write(f"n_grid: {n_grid}\n")
     f.write(f"output_directory: {output_directory}\n")
-    if true_par1 != None & true_par2 != None:
+    if true_par1 != None:
         f.write(f"true_par1:{true_par1}")
         f.write(f"true_par2:{true_par2}")
     for key, value in bsi_pars.items():
