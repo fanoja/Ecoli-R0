@@ -107,7 +107,7 @@ def get_valid_beta_gamma_pairs(n_grid, min_R0 = 1.01, max_R0 = 5, min_gamma = 0.
     
     return par_mat # (250*250, 2)
 
-def get_nt_R_pairs(n_grid, nt_range = [0.03, 0.5], R_range = [1.01,5]):
+def get_nt_R_pairs(n_grid, nt_range = [0.001, 0.8], R_range = [1.01,5]): # nt_range  = [0.03, 0.5]
     # nt = net transmission
     
     pairs = np.zeros((n_grid, 2))
@@ -141,7 +141,7 @@ def get_distance_points(pairs, bsi_obs, sim_pars, summaries):
         
         # simulate a sequence
         
-        sim_seq = SIR_and_BSI_simulator(par1 = par1, par2 = par2, nt = sim_pars["n_weeks"], N = sim_pars["pop_size"], bsi_pars = sim_pars["bsi_pars"],\
+        sim_seq = SIR_and_BSI_simulator(par1 = par1, par2 = par2, nt = sim_pars["n_weeks"], N = sim_pars["pop_size"], bsi_pars = sim_pars["bsi_pars"], alpha = sim_pars["alpha"],\
                                         is_prop = sim_pars["is_prop"], is_agg = sim_pars["is_agg"], time_period = sim_pars["time_period"],\
                                         reparam = sim_pars["reparam"], batch_size = sim_pars["batch_size"], random_state = sim_pars["random_state"])[0]
         

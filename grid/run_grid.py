@@ -48,7 +48,7 @@ os.mkdir(output_directory)
 bsi_pars = {"or_data": or_data, "clade": clade, "dataset": obs_data, "theta_c":theta_c, "theta_bsi":theta_bsi, "include_I0":include_I0} # assume load_data loads or_data, norm_data and bsac_data
 print(bsi_pars)
 sim_pars = {"n_weeks": n_weeks, "pop_size": pop_size, "bsi_pars":bsi_pars, "is_prop":is_prop, "is_agg":is_agg,\
-            "time_period":time_period, "reparam":reparam, "batch_size":batch_size, "random_state":random_state}
+            "time_period":time_period, "reparam":reparam, "alpha":alpha, "batch_size":batch_size, "random_state":random_state}
 
 # Save the parameters of this specific run:
 with open(os.path.join(output_directory, "sim_params.txt"), "w") as f:
