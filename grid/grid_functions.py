@@ -107,7 +107,7 @@ def get_valid_beta_gamma_pairs(n_grid, min_R0 = 1.01, max_R0 = 5, min_gamma = 0.
     
     return par_mat # (250*250, 2)
 
-def get_nt_R_pairs(n_grid, nt_range = [0.001, 0.8], R_range = [1.01,5]): # nt_range  = [0.03, 0.5]
+def get_nt_R_pairs(n_grid, nt_range = [0.001, 0.8], R_range = [1.01,3]): # nt_range  = [0.03, 0.5]
     # nt = net transmission
     
     pairs = np.zeros((n_grid, 2))
@@ -780,3 +780,43 @@ def modify_grid_params(directory, var_to_change, new_value):
         except IsADirectoryError:
             print(f"DirectoryError: {file}")
 
+
+def generate_grid_params_for_variable(template_path, template_fname, new_template_fname,\
+                                      var_name, var_values, res_id = "", use_ids = True, custom_ids = []):
+    # A function to generate grid_params.py files from a template
+    # For cases where one variable gets multiple values, such as alpha, and generating a grid_params file for each of those values.
+
+    for i in range(0, len(var_values)):
+
+        rid = f"{res_id}_{var_name}_{i}" # identifier string for the parameter file
+        new_content = ""
+        if use_ids == True:
+            filename = f"{new_template_fname}_{i}.py"
+        else:
+            fid = custom_ids[i]
+            filename = f"{new_template_fname}_{fid}.py"
+
+        try:
+            with open(template_path+template_fname, "r") as f: # read content and modify
+                lines = f.readlines()
+                for line in lines:
+                    parts = line.strip().split(' = ')
+                    var = parts[0]
+                    value = parts[1]
+                    if parts[0] == "r_id":
+                        new_content += f"{var} = '{str(rid)}'\n"
+                    elif parts[0] != var_name:
+                        new_content += f"{var} = {value}\n"
+                    elif str(parts[0]) == var_name:
+                        new_value = var_values[i]
+                        new_content += f"{var} = {new_value}\n"
+
+        except IsADirectoryError:
+            print(f"DirectoryError: {file}")
+
+        # Write new content to file:
+        try:
+            with open(template_path + filename, "w") as f:
+                f.write(new_content)
+        except IsADirectoryError:
+            print(f"DirectoryError: {file}")
