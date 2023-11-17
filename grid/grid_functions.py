@@ -107,7 +107,7 @@ def get_valid_beta_gamma_pairs(n_grid, min_R0 = 1.01, max_R0 = 5, min_gamma = 0.
     
     return par_mat # (250*250, 2)
 
-def get_nt_R_pairs(n_grid, nt_range = [0.001, 0.8], R_range = [1.01,3]): # nt_range  = [0.03, 0.5]
+def get_nt_R_pairs(n_grid, nt_range = [0.001, 0.8], R_range = [1.01,5]): # nt_range  = [0.03, 0.5]
     # nt = net transmission
     
     pairs = np.zeros((n_grid, 2))
