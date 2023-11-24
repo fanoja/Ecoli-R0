@@ -41,7 +41,7 @@ def distance_generalized(y_sim, y_obs, sum_func): # TODO: sum_func as args
 
     return np.sqrt(dist)
 
-def get_uniform_beta_gamma_pairs(n_beta, n_gamma, min_gamma = 0.001, max_gamma = 0.01, min_beta = 0, max_beta = 1):
+def get_uniform_beta_gamma_pairs(n_beta, n_gamma, min_gamma = 0.001, max_gamma = 0.2, min_beta = 0, max_beta = 1):
     # Get uniform priors for beta and gamma
     # returns a (n_beta*n_gamma, 2) matrix of parameter pairs
      
