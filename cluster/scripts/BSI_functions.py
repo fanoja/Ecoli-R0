@@ -4,7 +4,7 @@ import os
     
 print("Loading BSI_functions.py")
 
-grid = True # Change to False if using ELFI and True if using grid
+grid = False # Change to False if using ELFI and True if using grid
     
 def get_OR_hat_pars(or_data, clade = "A", dataset = "NORM"):
     

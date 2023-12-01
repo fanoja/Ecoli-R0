@@ -78,6 +78,11 @@ def SIR(par1, par2, nt, N, I0 = None, reparam = False, is_prop = True, batch_siz
     N = np.array([N]*nt)
     
     if reparam: # Lintusaari et al 2016
+        
+        # If there has been a log transformation of the parameters. If not, comment out.
+        #par1 = np.exp(par1)
+        #par2 = np.exp(par2)
+        
         a = par1*par2/(par2-1) #par1/(1 - 1/par2) # par1 = net transmission, par2 = R
         b = par1/(par2 - 1)
     else:
