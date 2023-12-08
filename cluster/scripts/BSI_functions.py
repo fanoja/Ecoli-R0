@@ -10,13 +10,14 @@ def get_OR_hat_pars(or_data, clade = "A", dataset = "NORM"):
     
     dataset = "BSAC"
     df = or_data[or_data["Label"] == f'{clade} ({dataset})']
-    or_mu = df["OR"]
+    or_mu = np.log(df["OR"])
     
     # Fix this with adjustment by sqrt(n) as demonstrated in Explaining Odds Ratios
     
+    # TODO log odds, 95%, N(or_mu, or_sd), exp(OR)
     n_sqrt = np.sqrt(1/df['carriage_nonPP'] + 1/df['Disease_nonPP'] + 1/df["carriage_PP"] + 1/df["Disease_PP"])
     z = 1.96
-    or_sd = (df["upper"] - df["lower"])/(2*z*n_sqrt)
+    or_sd = (np.log(df["upper"]) - np.log(df["lower"]))/(2*z*n_sqrt)
     
     return or_mu, or_sd
     
@@ -195,9 +196,11 @@ def exp_smoother(bsi, alpha = 0.2, batch_size = 1, random_state = None):
     return bsi_filtered # returns an array of shape (bs, n_obs)
 
 
+
 def SIR_and_BSI_simulator(par1, par2, nt, N, bsi_pars, alpha = 0.2, is_prop = True, is_agg = False, time_period = 52, reparam = False, has_or_hat = False, manual_or_hat = None, batch_size = 1, random_state = None):
     # A simulator function combining both the SIR simulation and the observational model
     # This is used for the grid simulation!!
+    is_prop = False
     
     cwd = os.getcwd()
 
@@ -212,6 +215,8 @@ def SIR_and_BSI_simulator(par1, par2, nt, N, bsi_pars, alpha = 0.2, is_prop = Tr
     dataset = bsi_pars["dataset"]
     theta_c = bsi_pars["theta_c"]
     theta_bsi = bsi_pars["theta_bsi"]
+    
+    print(is_prop)
     
     # Find I0:
     if dataset == "NORM":
@@ -228,6 +233,7 @@ def SIR_and_BSI_simulator(par1, par2, nt, N, bsi_pars, alpha = 0.2, is_prop = Tr
     
     if bsi_pars["include_I0"]:
         if is_prop:
+            print("Is prop is true")
             theta_bsi_a_0 = bsi_obs.iloc[0]/time_period
             I0 = (theta_bsi_a_0*theta_c/(theta_bsi_a_0 + or_hat[0]*theta_bsi - theta_bsi_a_0*or_hat[0]))*N
         else:
@@ -260,7 +266,7 @@ def SIR_and_BSI_simulator(par1, par2, nt, N, bsi_pars, alpha = 0.2, is_prop = Tr
     
     #or_hat = get_OR_hat(or_data, clade, dataset, batch_size = batch_size, random_state = random_state)
     #print(f"OR hat in col_to_BSI: {or_hat}")
-    BSI = col_to_BSI(SIRsim, or_hat, theta_c = theta_c, theta_bsi = theta_bsi, is_prop = is_prop)
+    BSI = col_to_BSI(SIRsim, np.exp(or_hat), theta_c = theta_c, theta_bsi = theta_bsi, is_prop = is_prop)
     
     if is_agg:
         BSI = sum_over_bsi(BSI, time_period = time_period)
@@ -296,14 +302,15 @@ def BSI_max_t(y):
     # time to peak/maximum number of bsi cases
     
     #return np.argmax(y) # grid
-    return np.argmax(y[:,], axis = 1) # ELFI
+    return np.argmax(y[:,], axis = 1)#*1000 # ELFI
+    #return (np.argmax(y[:,:], axis=1) == 11) * 1e10
 
 def BSI_max(y):
     # maximum number of BSI cases
     
     max_bsi = np.max(y[:,], axis = 1) # ELFI
     #max_bsi = np.max(y) # grid
-    return max_bsi#.reshape(-1,1).transpose()
+    return np.log(max_bsi + 1)#.reshape(-1,1).transpose()
 
 
 def BSI_vector(y):
@@ -315,6 +322,28 @@ def BSI_vector(y):
 def BSI_cumsum_quantile(y):
     
     return np.quantile(np.cumsum(y[:,]), 0.5)
+
+# New summaries: bsi_max_prev and bsi_max_next
+
+def BSI_max_prev(y):
+    
+    # First, find the index of the largest value in the sequence
+    i_max = np.argmax(y[:,], axis = 1)
+    i_max_p = np.clip(i_max - 1, a_min=0, a_max=None)
+    bsi_prev = np.diag(y[:,i_max_p])
+        
+    return np.log(bsi_prev + 1) # Scaling
+
+
+def BSI_max_next(y):
+    
+    i_max = np.argmax(y[:,], axis = 1)
+    i_max_p = np.clip(i_max + 1, a_min=0, a_max=len(y[0,:]) - 1) # i_max van't be longer than the sequence length
+    bsi_next = np.diag(y[:,i_max_p])
+    
+    return np.log(bsi_next + 1) # Scaling
+
+
 
 # 13 summaries, one for each year:
 
