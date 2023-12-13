@@ -10,14 +10,14 @@ def get_OR_hat_pars(or_data, clade = "A", dataset = "NORM"):
     
     dataset = "BSAC"
     df = or_data[or_data["Label"] == f'{clade} ({dataset})']
-    or_mu = np.log(df["OR"])
+    or_mu = df["OR"].values[0]
     
     # Fix this with adjustment by sqrt(n) as demonstrated in Explaining Odds Ratios
     
     # TODO log odds, 95%, N(or_mu, or_sd), exp(OR)
-    n_sqrt = np.sqrt(1/df['carriage_nonPP'] + 1/df['Disease_nonPP'] + 1/df["carriage_PP"] + 1/df["Disease_PP"])
+    n_sqrt = np.sqrt(1/df['carriage_nonPP'].values[0] + 1/df['Disease_nonPP'].values[0] + 1/df["carriage_PP"].values[0] + 1/df["Disease_PP"].values[0])
     z = 1.96
-    or_sd = (np.log(df["upper"]) - np.log(df["lower"]))/(2*z*n_sqrt)
+    or_sd = (df["upper"].values[0] - df["lower"].values[0])/(2*z*n_sqrt)
     
     return or_mu, or_sd
     
@@ -72,7 +72,9 @@ def col_to_BSI(SIR, OR_hat, theta_c = 1, theta_bsi = 0.001, is_prop = True, batc
         #theta_c = theta_c.generate(1)
     #if isinstance(theta_bsi, elfi.model.elfi_model.Constant):
         #theta_bsi = theta_bsi.generate(1)
-        
+    
+
+    
     theta_c_a = SIR[1]
     #print(theta_c_a)
     
@@ -96,7 +98,8 @@ def col_to_BSI(SIR, OR_hat, theta_c = 1, theta_bsi = 0.001, is_prop = True, batc
         #theta_bsi = theta_bsi/52
     #print(OR_hat)
     #print(OR_hat, theta_bsi, theta_c)
-    theta_bsi_a_hat = OR_hat.reshape(-1,1)*theta_c_a*theta_bsi/(theta_c_0 + OR_hat.reshape(-1,1)*theta_c_a)
+
+    theta_bsi_a_hat = OR_hat.reshape(-1,1)*theta_c_a*theta_bsi.reshape(-1,1)/(theta_c_0 + OR_hat.reshape(-1,1)*theta_c_a)
     
     #print(f"Shape of the theta_bsi_a_hat in col_to_BSI {theta_bsi_a_hat.shape}")
     theta_bsi_a_hat = np.maximum(theta_bsi_a_hat, 0) # If elements are below zero, force them to be 0.
@@ -200,7 +203,6 @@ def exp_smoother(bsi, alpha = 0.2, batch_size = 1, random_state = None):
 def SIR_and_BSI_simulator(par1, par2, nt, N, bsi_pars, alpha = 0.2, is_prop = True, is_agg = False, time_period = 52, reparam = False, has_or_hat = False, manual_or_hat = None, batch_size = 1, random_state = None):
     # A simulator function combining both the SIR simulation and the observational model
     # This is used for the grid simulation!!
-    is_prop = False
     
     cwd = os.getcwd()
 

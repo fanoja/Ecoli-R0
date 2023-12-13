@@ -52,7 +52,7 @@ def check_SIR_nonneg(comp_t, dcomp, is_prop = False):
 
 def SIR(par1, par2, nt, N, I0 = None, reparam = False, is_prop = True, batch_size=1, random_state = None):
     
-    #Wprint(f"is_prop in SIR: {is_prop}")
+    #print(f"is_prop in SIR: {is_prop}")
     par1 = np.atleast_1d(par1)
     par2 = np.atleast_1d(par2)
     batch_size = par1.shape[0]
