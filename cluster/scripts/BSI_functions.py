@@ -15,9 +15,10 @@ def get_OR_hat_pars(or_data, clade = "A", dataset = "NORM"):
     # Fix this with adjustment by sqrt(n) as demonstrated in Explaining Odds Ratios
     
     # TODO log odds, 95%, N(or_mu, or_sd), exp(OR)
-    n_sqrt = np.sqrt(1/df['carriage_nonPP'].values[0] + 1/df['Disease_nonPP'].values[0] + 1/df["carriage_PP"].values[0] + 1/df["Disease_PP"].values[0])
-    z = 1.96
-    or_sd = (df["upper"].values[0] - df["lower"].values[0])/(2*z*n_sqrt)
+    #n_sqrt = np.sqrt(1/df['carriage_nonPP'].values[0] + 1/df['Disease_nonPP'].values[0] + 1/df["carriage_PP"].values[0] + 1/df["Disease_PP"].values[0])
+    #z = 1.96
+    # Assuming that OR is normally distributed and that the CIs (mu +-2sd) are 95%, then the sd is approximately:
+    or_sd = (df["upper"].values[0] - df["lower"].values[0])/4#(2*z*n_sqrt)
     
     return or_mu, or_sd
     

@@ -130,14 +130,16 @@ if reparam:
 nt = elfi.Constant(n_weeks, model = m)
 N = elfi.Constant(pop_size, model = m)
 
-mu_OR = elfi.Constant(mu_OR, model = m)
-sd_OR = elfi.Constant(sd_OR, model = m)
+#mu_OR = elfi.Constant(mu_OR, model = m) # exp for lognormal
+#sd_OR = elfi.Constant(sd_OR, model = m)
 #OR_hat = elfi.RandomVariable(scipy.stats.norm, mu_OR, sd_OR, model = m)
 
 
 df = or_data[or_data["Label"] == f'{clade} (BSAC)']
-#OR_hat = elfi.Constant(df["OR"].values[0])
-OR_hat = elfi.Prior(scipy.stats.norm, mu_OR, sd_OR, model = m)
+OR_hat = elfi.Constant(df["OR"].values[0])
+#OR_hat = elfi.Prior(scipy.stats.norm, mu_OR, sd_OR, model = m)
+#OR_hat = elfi.Prior(scipy.stats.lognorm, scale = mu_OR, s = sd_OR, model = m)
+
 
 I0 = elfi.Constant(None, model = m)
 is_prop = elfi.Constant(is_prop, model = m)
@@ -157,12 +159,12 @@ else:
 
 
 theta_c = elfi.Constant(theta_c, model = m)
-#theta_bsi = elfi.Constant(theta_bsi, model = m)
-theta_bsi = elfi.Prior(scipy.stats.uniform, 0, 1.9e-5, model = m) # 1.9e-5
+theta_bsi = elfi.Constant(theta_bsi, model = m)
+#theta_bsi = elfi.Prior(scipy.stats.uniform, 0, 1.9e-5, model = m) # 1.9e-5
 
 #alpha = elfi.Prior(scipy.stats.beta, 2, 8, model = m)
-alpha = elfi.Constant(0.2, model = m)
-
+#alpha = elfi.Constant(0.2, model = m)
+alpha = elfi.Prior(scipy.stats.uniform, 0, 1, model = m)
 #is_prop = elfi.Constant(False, model = m)
 
 # elfi.Simulator(col_to_BSI, SIRsim, OR_hat, theta_c, theta_bsi, is_prop, observed = bsi_obs)
