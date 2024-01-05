@@ -157,14 +157,20 @@ else:
 
 #nSIR = elfi.Operation(prop_to_nSIR, SIRsim, N)
 
+def scale_theta_BSI(theta_BSI, scaling_factor):
+    
+    return scaling_factor*theta_BSI
 
 theta_c = elfi.Constant(theta_c, model = m)
-theta_bsi = elfi.Constant(theta_bsi, model = m)
+l = elfi.Constant(1, model = m) # Scaling factor for theta_bsi. For clade A, set to 1. For clade C2, learn.
+theta_bsi_unscaled = elfi.Constant(theta_bsi, model = m)
+theta_bsi = elfi.Operation(scale_theta_BSI, theta_bsi_unscaled, l, model = m)
+
 #theta_bsi = elfi.Prior(scipy.stats.uniform, 0, 1.9e-5, model = m) # 1.9e-5
 
 #alpha = elfi.Prior(scipy.stats.beta, 2, 8, model = m)
-#alpha = elfi.Constant(0.2, model = m)
-alpha = elfi.Prior(scipy.stats.uniform, 0, 1, model = m)
+alpha = elfi.Constant(0.2, model = m)
+#alpha = elfi.Prior(scipy.stats.uniform, 0, 1, model = m)
 #is_prop = elfi.Constant(False, model = m)
 
 # elfi.Simulator(col_to_BSI, SIRsim, OR_hat, theta_c, theta_bsi, is_prop, observed = bsi_obs)
@@ -187,6 +193,7 @@ S1 = elfi.Summary(BSI_max_t, conv_BSI, model = m)
 S2 = elfi.Summary(BSI_max, conv_BSI, model = m)
 S3 = elfi.Summary(BSI_max_prev, conv_BSI, model = m)
 S4 = elfi.Summary(BSI_max_next, conv_BSI, model = m)
+#S5 = elfi.Summary(BSI_cumsum_quantile, conv_BSI, model = m) # does not improve the fit
 
 def custom_log(S):
     return np.atleast_2d(np.log(S + 1)).reshape(-1,1)

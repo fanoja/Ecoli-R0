@@ -324,7 +324,8 @@ def BSI_vector(y):
 
 def BSI_cumsum_quantile(y):
     
-    return np.quantile(np.cumsum(y[:,]), 0.5)
+    cs = np.cumsum(y, axis = 1)
+    return np.log(np.quantile(cs[:,], 0.5, axis = 1) + 1)
 
 # New summaries: bsi_max_prev and bsi_max_next
 
