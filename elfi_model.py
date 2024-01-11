@@ -169,8 +169,8 @@ theta_bsi = elfi.Operation(scale_theta_BSI, theta_bsi_unscaled, l, model = m)
 #theta_bsi = elfi.Prior(scipy.stats.uniform, 0, 1.9e-5, model = m) # 1.9e-5
 
 #alpha = elfi.Prior(scipy.stats.beta, 2, 8, model = m)
-alpha = elfi.Constant(0.2, model = m)
-#alpha = elfi.Prior(scipy.stats.uniform, 0, 1, model = m)
+#alpha = elfi.Constant(0.2, model = m)
+alpha = elfi.Prior(scipy.stats.uniform, 0, 1, model = m)
 #is_prop = elfi.Constant(False, model = m)
 
 # elfi.Simulator(col_to_BSI, SIRsim, OR_hat, theta_c, theta_bsi, is_prop, observed = bsi_obs)
