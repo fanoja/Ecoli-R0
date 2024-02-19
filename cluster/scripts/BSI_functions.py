@@ -8,7 +8,7 @@ grid = False # Change to False if using ELFI and True if using grid
     
 def get_OR_hat_pars(or_data, clade = "A", dataset = "NORM"):
     
-    dataset = "BSAC"
+    dataset = "BSAC2"
     df = or_data[or_data["Label"] == f'{clade} ({dataset})']
     or_mu = df["OR"].values[0]
     
@@ -305,6 +305,7 @@ def BSI_max_t(y):
     # time to peak/maximum number of bsi cases
     
     #return np.argmax(y) # grid
+    #return np.argmax(y[:,], axis = 1)#*1000 # ELFI
     return np.argmax(y[:,], axis = 1)#*1000 # ELFI
     #return (np.argmax(y[:,:], axis=1) == 11) * 1e10
 
@@ -315,6 +316,15 @@ def BSI_max(y):
     #max_bsi = np.max(y) # grid
     return np.log(max_bsi + 1)#.reshape(-1,1).transpose()
 
+def BSI_k0(y):
+    BSI_at_t0 = y[:,0]
+    BSI_at_max = np.max(y[:,], axis = 1)
+    BSI_max_t = np.argmax(y[:,], axis = 1)
+    
+    k = (BSI_at_max - BSI_at_t0)/BSI_max_t
+
+    
+    return np.log(k + 1)
 
 def BSI_vector(y):
     # Compare all yearly simulated BSIs to the observed BSI
