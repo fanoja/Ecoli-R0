@@ -27,6 +27,8 @@ print("Grid parameters:")
 print(f"Clade: {clade}")
 # Specify parameters:
 
+is_SIS = True
+
 """
 clade = "C2"
 dataset = obs_data = "NORM"
@@ -135,7 +137,7 @@ N = elfi.Constant(pop_size, model = m)
 #OR_hat = elfi.RandomVariable(scipy.stats.norm, mu_OR, sd_OR, model = m)
 
 
-df = or_data[or_data["Label"] == f'{clade} (BSAC)']
+df = or_data[or_data["Label"] == f'{clade} (BSAC2)']
 OR_hat = elfi.Constant(df["OR"].values[0])
 #OR_hat = elfi.Prior(scipy.stats.norm, mu_OR, sd_OR, model = m)
 #OR_hat = elfi.Prior(scipy.stats.lognorm, scale = mu_OR, s = sd_OR, model = m)
@@ -147,11 +149,17 @@ reparam_node = elfi.Constant(reparam, model = m)
 
 # This node outputs SIR simulations, but the observed data is BSI.
 
-if reparam:
-    SIRsim = elfi.Operation(SIR, net_transmission, R, nt, N,I0, reparam_node, is_prop, model = m)
-else:
-    SIRsim = elfi.Operation(SIR, beta, gamma, nt, N, I0, reparam_node, is_prop, model = m)
+if not is_SIS:
+    if reparam:
+        SIRsim = elfi.Operation(SIR, net_transmission, R, nt, N,I0, reparam_node, is_prop, model = m)
+    else:
+        SIRsim = elfi.Operation(SIR, beta, gamma, nt, N, I0, reparam_node, is_prop, model = m)
 
+if is_SIS:
+    if reparam:
+        SISsim = elfi.Operation(SIS, net_transmission, R, nt, N,I0, reparam_node, is_prop, model = m)
+    else:
+        SISsim = elfi.Operation(SIS, beta, gamma, nt, N, I0, reparam_node, is_prop, model = m)
 
 # SIRsim = elfi.Simulator(SIR, beta, gamma, nt, N, observed = bsi_obs) # PROBLEM: The observations do not match this node. 
 
@@ -162,7 +170,8 @@ def scale_theta_BSI(theta_BSI, scaling_factor):
     return scaling_factor*theta_BSI
 
 theta_c = elfi.Constant(theta_c, model = m)
-l = elfi.Constant(1, model = m) # Scaling factor for theta_bsi. For clade A, set to 1. For clade C2, learn.
+l = elfi.Prior(scipy.stats.uniform, model = m) # Scaling factor for theta_bsi. For clade A, set to 1. For clade C2, learn.
+#l = elfi.Constant(1, model = m)
 theta_bsi_unscaled = elfi.Constant(theta_bsi, model = m)
 theta_bsi = elfi.Operation(scale_theta_BSI, theta_bsi_unscaled, l, model = m)
 
@@ -171,13 +180,18 @@ theta_bsi = elfi.Operation(scale_theta_BSI, theta_bsi_unscaled, l, model = m)
 #alpha = elfi.Prior(scipy.stats.beta, 2, 8, model = m)
 #alpha = elfi.Constant(0.2, model = m)
 alpha = elfi.Prior(scipy.stats.uniform, 0, 1, model = m)
+#alpha = elfi.Constant(1.0, model = m)
 #is_prop = elfi.Constant(False, model = m)
 
 # elfi.Simulator(col_to_BSI, SIRsim, OR_hat, theta_c, theta_bsi, is_prop, observed = bsi_obs)
-BSI = elfi.Operation(col_to_BSI, SIRsim, OR_hat, theta_c, theta_bsi, is_prop, model = m)
-
+if not is_SIS:
+    BSI = elfi.Operation(col_to_BSI, SIRsim, OR_hat, theta_c, theta_bsi, is_prop, model = m)
+else:
+    BSI = elfi.Operation(col_to_BSI, SISsim, OR_hat, theta_c, theta_bsi, is_prop, model = m)
+    
 time_period = elfi.Constant(52, model = m)
 sum_BSI = elfi.Operation(sum_over_bsi, BSI, time_period, model = m)
+#sum_BSI = elfi.Simulator(sum_over_bsi, BSI, time_period, observed = bsi_obs, model = m)
                          
 conv_BSI = elfi.Simulator(exp_smoother, sum_BSI, alpha, observed = bsi_obs, model = m)
 # sumBSI = elfi.Operation(sum_over_bsi, BSI) # is there any way of inputting observed data to this node?
@@ -189,11 +203,18 @@ conv_BSI = elfi.Simulator(exp_smoother, sum_BSI, alpha, observed = bsi_obs, mode
 #S2 = elfi.Summary(BSI_max, BSI)
 
 # TODO: scaling is missing??
+#S1 = elfi.Summary(BSI_max_t, sum_BSI, model = m)
+#S2 = elfi.Summary(BSI_max, sum_BSI, model = m)
+
 S1 = elfi.Summary(BSI_max_t, conv_BSI, model = m)
 S2 = elfi.Summary(BSI_max, conv_BSI, model = m)
 S3 = elfi.Summary(BSI_max_prev, conv_BSI, model = m)
 S4 = elfi.Summary(BSI_max_next, conv_BSI, model = m)
+#S3 = elfi.Summary(BSI_k0, sum_BSI, model = m)
+#S4 = elfi.Summary(BSI_max_prev, sum_BSI, model = m)
+#S4 = elfi.Summary(BSI_max_next, conv_BSI, model = m)
 #S5 = elfi.Summary(BSI_cumsum_quantile, conv_BSI, model = m) # does not improve the fit
+#S4 = elfi.Summary(BSI_vector, conv_BSI, model = m)
 
 def custom_log(S):
     return np.atleast_2d(np.log(S + 1)).reshape(-1,1)
@@ -223,6 +244,7 @@ S14 = elfi.Summary(BSI_14, conv_BSI, model = m)
 
 #d = elfi.Distance('minkowski', S1, S2, S3, S4, p = 1, model = m)
 d = elfi.Distance('euclidean', S1, S2, S3, S4, model = m)
+#d = elfi.Distance('euclidean', S1, S2, model = m)
 #log_d = elfi.Operation(np.log, d, model = m) # For BOLFI
 
 
