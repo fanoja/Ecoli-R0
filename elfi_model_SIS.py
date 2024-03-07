@@ -94,13 +94,17 @@ sim_pars = {"n_weeks": n_weeks, "pop_size": pop_size, "bsi_pars":bsi_pars, "is_p
 
 if not reparam:
     if clade == "A":
-        gamma = elfi.Prior(scipy.stats.norm,1/30,0.01, model = m) # recovery rate
+        #gamma = elfi.Prior(scipy.stats.norm,1/30,0.01, model = m) # recovery rate
+        #gamma = elfi.Prior(scipy.stats.gamma(a = 1.5,  scale = 1/6), model = m)
+        gamma = elfi.Prior(scipy.stats.norm, 7/30, 7*0.01, model = m)
     else:
         #gamma = elfi.Prior(scipy.stats.uniform, 0, 100, model = m) # Test a uniform prior for gamma, as in grid.
-        gamma = elfi.Prior(scipy.stats.norm,1/30,0.01, model = m)
+        #gamma = elfi.Prior(scipy.stats.norm,1/30,0.01, model = m)
+        #gamma = elfi.Prior(scipy.stats.gamma(a = 1.5,  scale = 1/6), model = m)
+        gamma = elfi.Prior(scipy.stats.norm, 7/30, 7*0.01, model = m)
         
-    #beta = elfi.Prior(CustomPrior_beta, gamma, 1, 5, model = m) 
-    beta = elfi.Prior(scipy.stats.uniform, 0,0.3)
+    beta = elfi.Prior(CustomPrior_beta, gamma, 1, 5, model = m) 
+    #beta = elfi.Prior(scipy.stats.uniform, 0, 1)
 
 # Reparametrized version:
 if reparam:
@@ -149,8 +153,8 @@ def scale_theta_BSI(theta_BSI, scaling_factor):
     return scaling_factor*theta_BSI
 
 theta_c = elfi.Constant(theta_c, model = m)
-l = elfi.Prior(scipy.stats.uniform, model = m) # Scaling factor for theta_bsi
-#l = elfi.Constant(1, model = m)
+#l = elfi.Prior(scipy.stats.uniform, model = m) # Scaling factor for theta_bsi
+l = elfi.Constant(1, model = m)
 theta_bsi_unscaled = elfi.Constant(theta_bsi, model = m)
 theta_bsi = elfi.Operation(scale_theta_BSI, theta_bsi_unscaled, l, model = m)
 
@@ -159,23 +163,23 @@ theta_bsi = elfi.Operation(scale_theta_BSI, theta_bsi_unscaled, l, model = m)
 #alpha = elfi.Prior(scipy.stats.beta, 2, 8, model = m)
 #alpha = elfi.Constant(0.2, model = m)
 alpha = elfi.Prior(scipy.stats.uniform, 0, 1, model = m)
+
 #alpha = elfi.Constant(1.0, model = m)
+
 #is_prop = elfi.Constant(False, model = m)
 
 # elfi.Simulator(col_to_BSI, SIRsim, OR_hat, theta_c, theta_bsi, is_prop, observed = bsi_obs)
-if not is_SIS:
-    BSI = elfi.Operation(col_to_BSI, SIRsim, OR_hat, theta_c, theta_bsi, is_prop, model = m)
-else:
-    BSI = elfi.Operation(col_to_BSI, SISsim, OR_hat, theta_c, theta_bsi, is_prop, model = m)
+
+BSI = elfi.Operation(col_to_BSI, SISsim, OR_hat, theta_c, theta_bsi, is_prop, model = m)
     
 time_period = elfi.Constant(52, model = m)
 sum_BSI = elfi.Operation(sum_over_bsi, BSI, time_period, model = m)
 #sum_BSI = elfi.Simulator(sum_over_bsi, BSI, time_period, observed = bsi_obs, model = m)
                          
 conv_BSI = elfi.Simulator(exp_smoother, sum_BSI, alpha, observed = bsi_obs, model = m)
+#conv_BSI = elfi.Operation(exp_smoother, sum_BSI, alpha, model = m)
 
-
-def BSI_max_partial(y, p = 0.99):
+def BSI_max_partial(y, p = 0.95):
 # Find a partial maximum value. p = percent of the maximum.
 # Finds the closest value to p*maximum
 
@@ -187,7 +191,7 @@ def BSI_max_partial(y, p = 0.99):
 
     return np.log(max_bsi_p + 1)#.reshape(-1,1).transpose()
 
-def BSI_max_partial_t(y, p = 0.99):
+def BSI_max_partial_t(y, p = 0.95):
     # Find a partial maximum value. p = percent of the maximum.
     # Finds the closest value to p*maximum
 
@@ -198,17 +202,71 @@ def BSI_max_partial_t(y, p = 0.99):
         max_bsi_p[b] = np.abs(y[b,]-pm).argmin()
 
     return max_bsi_p#.reshape(-1,1).transpose()
+
+# Regression-based summaries:
+def fit_linreg(y, plot = False):
+    
+    from sklearn import linear_model
+    
+    log_data = np.log(y + 1)
+
+    bs = y.shape[0]
+    slopes = np.zeros(bs)
+    ints = np.zeros(bs)
+
+    for b in range(0, bs):
+        reg = linear_model.LinearRegression()
+
+        x = np.arange(0, len(y[b]), 1).reshape(-1, 1)
+        y_train = log_data[b] 
+        reg.fit(x, y_train)
+
+        if plot:
+            y_pred = reg.predict(x)
+
+            plt.plot(x, y_pred)
+            plt.scatter(x,y_train)
+            plt.title("Regression line on log(x + 1) data")
+            plt.show()
+
+        ints[b] = reg.intercept_
+        slopes[b] = reg.coef_
+
+        
+    return slopes, ints
+
+def linreg_slope(y):
+    
+    return fit_linreg(y)[0]
+
+def linreg_intercept(y):
+    
+    return fit_linreg(y)[1]
+
+
 """
 S1 = elfi.Summary(BSI_max_partial, sum_BSI, model = m)
 S2 = elfi.Summary(BSI_max_partial_t, sum_BSI, model = m)
 S3 = elfi.Summary(BSI_k0, sum_BSI, model = m)
 """
 
+"""
 S1 = elfi.Summary(BSI_max_partial, conv_BSI, model = m)
 S2 = elfi.Summary(BSI_max_partial_t, conv_BSI, model = m)
 S3 = elfi.Summary(BSI_k0, conv_BSI, model = m)
+"""
 
-d = elfi.Distance('euclidean', S1, S2, S3, model = m)
+#linreg = elfi.Simulator(fit_linreg, conv_BSI, observed = bsi_obs, model = m)
+#linreg = elfi.Operation(fit_linreg, conv_BSI, model = m)
+
+S1 = elfi.Summary(linreg_slope, conv_BSI, model = m)
+S2 = elfi.Summary(linreg_intercept, conv_BSI, model = m)
+
+
+#S1 = elfi.Summary(linreg_slope, conv_BSI, model = m)
+#S2 = elfi.Summary(linreg_intercept, conv_BSI, model = m)
+
+d = elfi.Distance('euclidean', S1, S2, model = m)
     
 def custom_log(S):
     return np.atleast_2d(np.log(S + 1)).reshape(-1,1)
