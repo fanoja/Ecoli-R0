@@ -1,5 +1,5 @@
 pop_size = 1000000
-n_weeks = 14*52
+n_weeks =14*52 #14*52
 clade = "C2"
 obs_data = "NORM"
 true_par1 = None

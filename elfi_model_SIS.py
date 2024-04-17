@@ -93,6 +93,11 @@ sim_pars = {"n_weeks": n_weeks, "pop_size": pop_size, "bsi_pars":bsi_pars, "is_p
 #gamma = elfi.Prior(scipy.stats.gamma, 1, 0, 100)
 
 if not reparam:
+    
+    #gamma = elfi.Prior(scipy.stats.uniform,0, 2, model = m)
+    gamma = elfi.Prior(scipy.stats.gamma(a = 1.5,  scale = 1/6), model = m)
+
+    """
     if clade == "A":
         #gamma = elfi.Prior(scipy.stats.norm,1/30,0.01, model = m) # recovery rate
         #gamma = elfi.Prior(scipy.stats.gamma(a = 1.5,  scale = 1/6), model = m)
@@ -103,7 +108,9 @@ if not reparam:
         #gamma = elfi.Prior(scipy.stats.gamma(a = 1.5,  scale = 1/6), model = m)
         gamma = elfi.Prior(scipy.stats.norm, 7/30, 7*0.01, model = m)
         
-    beta = elfi.Prior(CustomPrior_beta, gamma, 1, 5, model = m) 
+    """
+        
+    beta = elfi.Prior(CustomPrior_beta, gamma, 1.01, 5, model = m) 
     #beta = elfi.Prior(scipy.stats.uniform, 0, 1)
 
 # Reparametrized version:
@@ -153,18 +160,16 @@ def scale_theta_BSI(theta_BSI, scaling_factor):
     return scaling_factor*theta_BSI
 
 theta_c = elfi.Constant(theta_c, model = m)
-#l = elfi.Prior(scipy.stats.uniform, model = m) # Scaling factor for theta_bsi
+#l = elfi.Prior(scipy.stats.uniform,0, 2, model = m) # Scaling factor for theta_bsi, was 0, 0.1 for best fit.
 l = elfi.Constant(1, model = m)
 theta_bsi_unscaled = elfi.Constant(theta_bsi, model = m)
 theta_bsi = elfi.Operation(scale_theta_BSI, theta_bsi_unscaled, l, model = m)
 
 #theta_bsi = elfi.Prior(scipy.stats.uniform, 0, 1.9e-5, model = m) # 1.9e-5
 
-#alpha = elfi.Prior(scipy.stats.beta, 2, 8, model = m)
-#alpha = elfi.Constant(0.2, model = m)
-alpha = elfi.Prior(scipy.stats.uniform, 0, 1, model = m)
+#alpha = elfi.Prior(scipy.stats.uniform, 0, 1, model = m)
 
-#alpha = elfi.Constant(1.0, model = m)
+alpha = elfi.Constant(1.0, model = m)
 
 #is_prop = elfi.Constant(False, model = m)
 
@@ -203,10 +208,18 @@ def BSI_max_partial_t(y, p = 0.95):
 
     return max_bsi_p#.reshape(-1,1).transpose()
 
+def mean_cumulative_diff(y):
+    # Summary: mean difference in log cumulative cases
+    cy = np.cumsum(y[:,], axis = 1)
+    return np.mean(np.diff(np.log(cy + 1))[:,], axis = 1)
+    
 # Regression-based summaries:
-def fit_linreg(y, plot = False):
+def fit_linreg(y, plot = False, cumulative = False):
     
     from sklearn import linear_model
+    
+    if cumulative:
+        y = np.cumsum(y, axis = 1)
     
     log_data = np.log(y + 1)
 
@@ -256,17 +269,38 @@ S2 = elfi.Summary(BSI_max_partial_t, conv_BSI, model = m)
 S3 = elfi.Summary(BSI_k0, conv_BSI, model = m)
 """
 
+"""
+S1 = elfi.Summary(mean_cumulative_diff, conv_BSI, model = m)
+S2 = elfi.Summary(BSI_max_partial, conv_BSI, model = m)
+S3 = elfi.Summary(BSI_max_partial_t, conv_BSI, model = m)
+"""
+
+S1 = elfi.Summary(BSI_1, conv_BSI, model = m)
+S2 = elfi.Summary(BSI_2, conv_BSI, model = m)
+S3 = elfi.Summary(BSI_3, conv_BSI, model = m)
+S4 = elfi.Summary(BSI_4, conv_BSI, model = m)
+S5 = elfi.Summary(BSI_5, conv_BSI, model = m)
+S6 = elfi.Summary(BSI_6, conv_BSI, model = m)
+S7 = elfi.Summary(BSI_7, conv_BSI, model = m)
+S8 = elfi.Summary(BSI_8, conv_BSI, model = m)
+S9 = elfi.Summary(BSI_9, conv_BSI, model = m)
+S10 = elfi.Summary(BSI_10, conv_BSI, model = m)
+S11 = elfi.Summary(BSI_11, conv_BSI, model = m)
+S12 = elfi.Summary(BSI_12, conv_BSI, model = m)
+S13 = elfi.Summary(BSI_13, conv_BSI, model = m)
+S14 = elfi.Summary(BSI_14, conv_BSI, model = m)
 #linreg = elfi.Simulator(fit_linreg, conv_BSI, observed = bsi_obs, model = m)
 #linreg = elfi.Operation(fit_linreg, conv_BSI, model = m)
 
-S1 = elfi.Summary(linreg_slope, conv_BSI, model = m)
-S2 = elfi.Summary(linreg_intercept, conv_BSI, model = m)
+#S1 = elfi.Summary(linreg_slope, conv_BSI, model = m)
+#S2 = elfi.Summary(linreg_intercept, conv_BSI, model = m)
 
 
 #S1 = elfi.Summary(linreg_slope, conv_BSI, model = m)
 #S2 = elfi.Summary(linreg_intercept, conv_BSI, model = m)
 
-d = elfi.Distance('euclidean', S1, S2, model = m)
+d = elfi.Distance('euclidean', S1, S2, S3, S4, S5, S6, S7, S8, S9, S10, S11, S12, S13, S14, model = m)
+#d = elfi.Distance('euclidean', S1, S2, S3, model = m)
     
 def custom_log(S):
     return np.atleast_2d(np.log(S + 1)).reshape(-1,1)

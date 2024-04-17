@@ -48,9 +48,9 @@ def SIS(beta, alpha, I0 = 1, S0 = 9999, N = 10000, T = 100):
     
     for t in range(0, T - 1):
         
-        # Update SIR model
+        # Update SIS model
         I.append(I[t] + dI(I, S, t, beta, alpha, N))
-        S.append(S[t] + dS(S, I, t, beta, N))
+        S.append(S[t] + dS(S, I, t, beta, N) + dR(I, t, alpha))
         
     return S, I
  

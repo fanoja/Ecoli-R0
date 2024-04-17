@@ -19,3 +19,4 @@ __pycache__
 */__pycache__/*
 testing.ipynb
 old_files/**
+res/elfi_res/**
