@@ -65,7 +65,7 @@ class CustomPrior_beta(elfi.Distribution):
 
 # Specifying data-related parameters:
 #bsi_obs_data = get_obs_BSI(df = norm_data, clade = "A", is_prop = True)
-bsi_obs_data = get_obs_BSI(df = norm_data, clade = clade, is_prop = is_prop)
+#bsi_obs_data = get_obs_BSI(df = norm_data, clade = clade, is_prop = is_prop)
 bsi_obs_data = bsi_obs = get_incidence_data("data/NORM_incidence.csv", clade = clade, is_prop = is_prop, n_incidence_pop = pop_size)
 
 print(f'Number of weeks to simulate: {n_weeks}')
@@ -177,6 +177,7 @@ theta_bsi = elfi.Constant(theta_bsi, model = m)
 
 #theta_bsi = elfi.Prior(scipy.stats.uniform, 0, 1.9e-5, model = m) # 1.9e-5
 
+## Set the smoothing parameter alpha. Alpha = 1 corresponds to no exponential smoothing.
 #alpha = elfi.Prior(scipy.stats.beta, 2, 8, model = m)
 #alpha = elfi.Constant(0.2, model = m)
 alpha = elfi.Prior(scipy.stats.uniform, 0, 1, model = m)
