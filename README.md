@@ -1,37 +1,20 @@
 # Estimating R0 for Ecoli
 
-Code for the estimation of R0 for *E. coli* colonisation.
+Code for the estimation of $R_0$ for *E. coli* colonisation.
 - Model: SIR + observational model
 - Method: likelihood-free inference
 
-## Structure
+## Directories and Files
 
-- `doc/`: environment.yml file can be found here
+- `doc/`: environment.yml file can be found here for installing necessary packages to run this model.
 - `data/`: datasets
-- `cluster/scripts/`: Files for 
-- The main notebook is `Model 1.ipynb`
-
-### Other relevant notebooks
-
-- `Priors.ipynb`: Identifiability and testing different priors.
-- `summaries.ipynb`: Testing summaries for ELFI.
-- `diagnostics.ipynb`: Validation and diagnostics related code.
-- `exploratory.ipynb`: Exploratory figures (replicates of previous studies and some original figures also).
-- `SIR models.ipynb`: Notebook with a simple SIR model and least squares estimation (for practice). 
-- `reparam SIR.ipynb`: Reparametrized model with net transmission and R as the parameters to estimate.
+- `res/´: result files and visualisations
+- `cluster/scripts/`: .py files containing the SIR model, observation model and loading the incidence and odds ratio data.
+- `Clade A.ipynb` and `Clade C2.ipynb`: Notebooks detailing how the model is run.
+-  `visualization.ipynb`: R code for visualisation of the results.
+- `grid_params_clade_A.py` and `grid_params_clade_C2.py`: These files contain the relevant simulation parameters for each clade of interest, such as the population size, number of weeks to simulate, hyperparameters etc.
+- ´grid_params.py`: This file gets overwritten by the contents of the files above, depending which clade is chosen for running the model. Do not modify.
+- `elfi_model.py`: Contains the definition of the ELFI model. This model is loaded in `Clade A.ipynb` or `Clade C2.ipynb`.
 
 
-### Identifiability
 
-
-## Identifiable
-Simulated data, not aggregated:
-- `beta = elfi.Prior(scipy.stats.gamma, 1, 0, 10)` and `gamma = elfi.Prior(scipy.stats.norm,1/30,0.01)`
-- `beta = elfi.Prior(scipy.stats.gamma, 1, 0, 100)` and `gamma = elfi.Prior(scipy.stats.norm,1/30,0.01)`
-- `beta = elfi.Prior(scipy.stats.gamma, 1, 0, 1000)` and `gamma = elfi.Prior(scipy.stats.norm,1/30,0.01)`
-
-## Not identifiable
-
-
-## Slow:
-- Aggregated data
