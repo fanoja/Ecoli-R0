@@ -1,8 +1,7 @@
 # Estimating R0 for Ecoli
 
-Code for the estimation of $R_0$ for *E. coli* colonisation.
-- Model: SIR + observational model
-- Method: likelihood-free inference
+Analysis code for the manuscript: "Basic reproduction number for pandemic
+Escherichia coli clones is comparable to typical pandemic viruses"
 
 ## Directories and Files
 
