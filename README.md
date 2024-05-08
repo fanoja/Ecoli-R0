@@ -8,7 +8,7 @@ Code for the estimation of R0 for *E. coli* colonisation.
 
 - `doc/`: environment.yml file can be found here
 - `data/`: datasets
-- `cluster/`: for running the model on the command line (or on a computing cluster). In progress
+- `cluster/scripts/`: Files for 
 - The main notebook is `Model 1.ipynb`
 
 ### Other relevant notebooks
