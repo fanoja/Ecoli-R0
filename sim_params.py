@@ -1,0 +1,14 @@
+clade = 'A'
+simulator_model = "SIR"
+theta_bsi = 0.00001249048
+is_prop = False
+pop_size = 1000000
+n_years = 14
+n_weeks = n_years*52
+is_agg = True
+time_period = 52
+reparam = True
+theta_c = 1
+param1 = "Net transmission"
+param2 = "R"
+variables = ["par1", "par2", "Dt"] # for plotting purposes
