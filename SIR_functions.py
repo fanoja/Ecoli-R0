@@ -64,3 +64,36 @@ def SIR(par1, par2, I_scalar, t, N, reparam = False, R_scalar = 0):
         R[i,:] = ret[:,2]
     return S, I, R
 
+# Alternative: SIS model
+def SISderiv(y, t, N, beta, gamma):
+    """SIS model derivation."""
+    S, I = y
+    dSdt = -beta * S * I / N + gamma * I
+    dIdt =  beta * S * I / N - gamma * I
+    return dSdt, dIdt
+
+def SIS(par1, par2, I_scalar, t, N, reparam = False, batch_size=1, random_state=None):
+    """SIS model, alternative to SIR model."""
+    
+    if reparam:
+        beta = par1*par2/(par2-1) #par1/(1 - 1/par2) # par1 = net transmission, par2 = R
+        gamma = par1/(par2 - 1)
+    else:
+        beta = par1
+        gamma = par2
+
+    I0 = np.array([I_scalar] * beta.size)
+    S0 = N - I0
+
+    # Initial conditions vector
+    # Integrate the SIS equations over the time grid, t.
+    S = np.zeros((beta.size, t.size))
+    I = np.zeros((beta.size, t.size))
+    for i in range(beta.size):
+        y0 = S0[i], I0[i]
+        ret = odeint(SISderiv, y0, t, args=(N, beta[i], gamma[i]))
+        S[i, :] = ret[:, 0]
+        I[i, :] = ret[:, 1]
+
+    return S, I, 0
+

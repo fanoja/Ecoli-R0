@@ -18,13 +18,16 @@ def get_OR_hat_pars(or_data, clade = "A"):
     """
     
     dataset = "BSAC2"
-    df = or_data[or_data["Label"] == f'{clade} ({dataset})']
+    if clade in ["B", "B_349", "B_non_349"]:
+        df = or_data[or_data["Label"] == f'B ({dataset})']
+    else:
+        df = or_data[or_data["Label"] == f'{clade} ({dataset})']
     or_mu = df["OR"].values[0]
     
     # Assuming that OR is normally distributed and that the CIs (mu +-2sd) are 95%, then the sd is approximately:
     or_sd = (df["upper"].values[0] - df["lower"].values[0])/4#(2*z*n_sqrt)
     
-    return or_mu, or_sd
+    return or_mu, or_sd, df["lower"].values[0], df["upper"].values[0]
     
 def col_to_BSI(SIR, mu_OR, theta_c = 1, theta_bsi = 0.001, N=None, poisson = True):
     """The observation model translating colonisations to BSI incidence. 
@@ -60,7 +63,10 @@ def col_to_BSI(SIR, mu_OR, theta_c = 1, theta_bsi = 0.001, N=None, poisson = Tru
 def sync_timewindow(bsi_obs, Dt, n_years, time_period = 52, batch_size = 1, random_state = None):
     """Expanding the observation time window from n_years to Dt + n_years. This way, colonisation can be simulated before the observation period.
     """
-    
+
+    if bsi_obs.ndim == 1:
+        bsi_obs = bsi_obs.reshape(1, bsi_obs.shape[0])
+        
     data_in_window = np.zeros((bsi_obs.shape[0], n_years * time_period))
     for i in range(0, bsi_obs.shape[0]):
         obs_window = (np.arange(n_years * 52) + Dt[i]).astype(int)

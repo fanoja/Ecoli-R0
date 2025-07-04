@@ -29,23 +29,29 @@ def plot_priors_elfi(pars, prior_sample, output_directory = "res/elfi_res/test",
         return pname
     
     for par in pars:
-        plt.hist(prior_sample[par])
-        pname = check_for_parname(par)
-        plt.title(pname)
-        plt.savefig(os.path.join(output_directory, f"{pname}_prior_hist.pdf"), format="pdf", bbox_inches="tight")
-        plt.clf()
+        try:
+            plt.hist(prior_sample[par])
+            pname = check_for_parname(par)
+            plt.title(pname)
+            plt.savefig(os.path.join(output_directory, f"{pname}_prior_hist.pdf"), format="pdf", bbox_inches="tight")
+            plt.clf()
+        except KeyError:
+            print(f"Par {par} not specified.")
     
     for p1 in pars:
         for p2 in pars:
             if p1 != p2:
-                plt.scatter(prior_sample[p1], prior_sample[p2])
-
-                p1_name = check_for_parname(p1)
-                p2_name = check_for_parname(p2)
-                
-                plt.title(f"{p1_name} and {p2_name}")
-                plt.savefig(os.path.join(output_directory, f"{p1_name}_{p2_name}_prior_scatter.pdf"), format="pdf", bbox_inches="tight")                    
-                plt.clf()
+                try:
+                    plt.scatter(prior_sample[p1], prior_sample[p2])
+    
+                    p1_name = check_for_parname(p1)
+                    p2_name = check_for_parname(p2)
+                    
+                    plt.title(f"{p1_name} and {p2_name}")
+                    plt.savefig(os.path.join(output_directory, f"{p1_name}_{p2_name}_prior_scatter.pdf"), format="pdf", bbox_inches="tight")                    
+                    plt.clf()
+                except KeyError:
+                    print(f"{par} not specified.")
 
 
 def plot_prior_pred(prior_sample, output_directory = "res/elfi_res/test"):
@@ -174,12 +180,18 @@ def visualize_ppc(pred_BSI, bsi_obs_data, output_directory = "res/elfi_res/test"
     med = np.median(pred_BSI, axis = 0)
     cis = np.percentile(pred_BSI, [(100-ci)/2, 100 - (100-ci)/2], axis = 0)
     t = np.arange(pred_BSI.shape[1])
+
+    bsi_idx = list(bsi_obs_data.index)
+    additional_labels = [max(bsi_idx) + i for i in range(1, len(t) - len(bsi_idx) + 1)]
+    xtick_labels = bsi_idx + additional_labels
+    print(xtick_labels)
+    
     plt.plot(expected_value, label = "mean", color = "blue")
     plt.plot(med, label = "median", color = "lightblue")
     plt.plot(cis[0,:], label = f"Lower {ci}% CI", color = "gray")
     plt.plot(cis[1,:], label = f"Upper {ci}% CI", color = "gray")
     plt.plot(np.array(bsi_obs_data), label = "Observed BSI", marker = '*', linestyle = '--', color = "orange")
-    plt.xticks(t, bsi_obs_data.index) # note: bsi_obs_data must have the correct years!
+    plt.xticks(t, xtick_labels, rotation = 45)
     plt.legend()
     plt.title(f"Clade {clade} Pointwise Posterior Predictive")
     plt.tight_layout()
@@ -189,7 +201,34 @@ def visualize_ppc(pred_BSI, bsi_obs_data, output_directory = "res/elfi_res/test"
     else:
         plt.show()
 
-def plot_post_SIR_w_years(clade, pred_sample, output_directory = "res/elfi_res/test", save_fig = True):
+
+def plot_post_col_w_CIs(clade, pred_sample, output_directory = "res/elfi_res/test", save_fig = True):
+    """Posterior predictive colonisation: mean, median 50/95% CIs"""
+
+    pred_col = pred_sample["SIRsim"][1]
+    expected_value = np.mean(pred_col, axis = 0)
+    med = np.median(pred_col, axis = 0)
+    cis95 = np.percentile(pred_col, [(100 - 95)/2, 100 - (100 - 95)/2], axis = 0)
+    cis50 = np.percentile(pred_col, [(100 - 50)/2, 100 - (100 - 50)/2], axis = 0)
+    t = np.arange(pred_col.shape[1])
+
+    plt.plot(expected_value, label = "mean", color = "blue")
+    plt.plot(med, label = "median", color = "lightblue")
+    plt.plot(cis50[0,:], label = f"Lower {50}% CI", color = "darkgray")
+    plt.plot(cis50[1,:], label = f"Upper {50}% CI", color = "darkgray")
+    plt.plot(cis95[0,:], label = f"Lower 95% CI", color = "gray")
+    plt.plot(cis95[1,:], label = f"Upper 95% CI", color = "gray")
+    plt.legend()
+    plt.title(f"Clade {clade} Pointwise Posterior Predictive Colonization")
+    plt.tight_layout()
+    if save_fig:
+        plt.savefig(os.path.join(output_directory, f"ppred_col_CIs.pdf"), format="pdf", bbox_inches="tight")
+        plt.clf()
+    else:
+        plt.show()
+
+
+def plot_post_col_w_years(clade, pred_sample, max_delay_in_years = 0.5, output_directory = "res/elfi_res/test", save_fig = True):
     """Posterior predictive colonisation with years as xlabels.
 
     Args: 
@@ -199,23 +238,37 @@ def plot_post_SIR_w_years(clade, pred_sample, output_directory = "res/elfi_res/t
         save_fig (bool): if False, displays the figure without saving.
 
     """
-    dt = 5 # used only for the xtick labels. The generated SIR curves use the Dt posterior.
     n_years = 14
-    
+
     if clade == "A":
-        start_year = 2004
+        start_year_obs = 2004
+    elif clade == "B":
+        start_year_obs = 2010
+        n_years -= 6
     else:
-        start_year = 2007
+        start_year_obs = 2007
         n_years -= 3
+
+    start_year_sim = int(start_year_obs) - max_delay_in_years
+    n_simulated_weeks = int((n_years + max_delay_in_years)*52) # could also get this from pred_sample
     
-    t = [n*52 for n in range(0, dt + n_years)]
-    xtick_labels = [start_year - dt + years for years in range(0, dt)] + [start_year + years for years in range(0, n_years)]
+    xtick_weeks = []
+    current_week = 0
+    
+    while n_simulated_weeks - current_week >= 52:
+        xtick_weeks.append(current_week)
+        current_week = current_week + 52
+    
+    n_xticks = len(xtick_weeks)
+    xtick_years = [start_year_sim + i for i in range(0, n_xticks)]
+    #t = [n*52 for n in range(0, n_years)]
+    #xtick_labels = [start_year - dt + years for years in range(0, dt)] + [start_year + years for years in range(0, n_years)]
     plt.plot(pred_sample["SIRsim"][1].T, alpha = 0.5, color = "grey")
-    plt.title("Predicted SIR (weekly)")
-    plt.xticks(t, xtick_labels, rotation = 90)
+    plt.title("Predicted colonization (weekly)")
+    plt.xticks(xtick_weeks, xtick_years, rotation = 90)
     plt.tight_layout()
     if save_fig:
-        plt.savefig(os.path.join(output_directory, f"ppred_SIR_w_years.pdf"), format="pdf", bbox_inches="tight")
+        plt.savefig(os.path.join(output_directory, f"ppred_col_w_years.pdf"), format="pdf", bbox_inches="tight")
         plt.clf()
     else:
         plt.show()
@@ -312,18 +365,19 @@ def plot_diagnostics(posterior_sample, discrepancies, reparam, output_directory 
         print(1/np.mean(p2)) # The time which this clade colonises an individual on average.
         
     # Net transmission posterior:
-    
-    plt.hist(p1 - p2)
-    plt.title("Net transmission = beta - gamma")
-    if save_fig:
-        plt.savefig(os.path.join(output_directory, f"net_transmission_hist.pdf"), format="pdf", bbox_inches="tight")
-        plt.clf()
-    else:
-        plt.show()
+
+    if not reparam:
+        plt.hist(p1 - p2)
+        plt.title("Net transmission = beta - gamma")
+        if save_fig:
+            plt.savefig(os.path.join(output_directory, f"net_transmission_hist.pdf"), format="pdf", bbox_inches="tight")
+            plt.clf()
+        else:
+            plt.show()
 
 
 
-def plot_prior_sensitivity(prior_sample, posterior_sample, variables = ["par1", "par2", "Dt"], save_fig = True, output_directory = "res/elfi_res/test"):
+def plot_prior_sensitivity(prior_sample, posterior_sample, variables = ["par1", "par2", "Dt"], var_names = ["par1", "par2", "Dt"], save_fig = True, output_directory = "res/elfi_res/test"):
     """Plot a set of two histograms: one figure for each parameter. One histogram is the prior, the other the posterior. The goal is to compare the prior distribution to the posterior distribution as a prior sensitivity analysis.
 
     Args:
@@ -339,7 +393,7 @@ def plot_prior_sensitivity(prior_sample, posterior_sample, variables = ["par1", 
     for i in range(0, len(variables)):
         axs[i].hist(posterior_sample[variables[i]], alpha = 0.5, label = "Posterior")
         axs[i].hist(prior_sample[variables[i]], alpha = 0.5, label = "Prior")
-        axs[i].set_title(variables[i])
+        axs[i].set_title(var_names[i])
         if i == 0:
             axs[i].legend()
     if save_fig:
@@ -348,29 +402,6 @@ def plot_prior_sensitivity(prior_sample, posterior_sample, variables = ["par1", 
     else:
         plt.show()
 
-def plot_weighted_posterior(posterior_sample, posterior_weights, variable, output_directory = "res/elfi_res/test", save_fig = True):
-    """Plot the posterior distribution as a histogram, with the SMC-ABC weights taken into account. See ELFI tutoria for details: https://elfi.readthedocs.io/en/latest/usage/tutorial.html.
-
-    Args:
-        posterior_sample (dict): draws from the posterior distribution.
-        posterior_weights (list): weights from the SMC-ABC.
-        variable (str): variable of interest, same name that is used in inference.
-        output_directory (str): path to the directory where the figure will be saved.
-        save_fig (bool): if False, display the figure without saving.   
-    """
-
-    weighted_posterior = np.random.choice(posterior_sample[variable], size = len(posterior_sample[variable]), p = posterior_weights/np.sum(posterior_weights))
-
-    plt.hist(posterior_sample[variable], alpha = 0.5, label = "Original posterior")
-    plt.hist(weighted_posterior, alpha = 0.2, label = "Weighted posterior")
-    plt.title(f"ABC-SMC posterior, {variable}")
-    plt.legend()
-
-    if save_fig:
-        plt.savefig(os.path.join(output_directory, f"{variable}_weighted_vs_unweighted_posterior.pdf"), format="pdf", bbox_inches="tight")
-        plt.clf()
-    else:
-        plt.show()
 
 def plot_joint_distr_by_eps(posterior_sample, discrepancies, eps = [2,1.5,1.0]):
     """Plot the joint density of par1 and par2 for different threshold values.
@@ -445,3 +476,85 @@ def plot_max_bsi_max_col_scatter(prior_sample, pred_sample, discrepancies, eps =
     plt.ylabel("Max yearly BSI")
     plt.legend()
     plt.show()
+
+
+# discrepancies for convergence, python version
+
+
+def weight_posterior(posterior_sample, posterior_weights):
+    # Weighted joint posterior
+
+    try:
+        posterior_sample_df = pd.DataFrame({"par1":posterior_sample["par1"], "par2":posterior_sample["par2"], "Dt":posterior_sample["Dt"]})
+    except KeyError:
+        print("Delay parameter not included.")
+        posterior_sample_df = pd.DataFrame({"par1":posterior_sample["par1"], "par2":posterior_sample["par2"]})
+    
+    indx = np.arange(0, posterior_sample_df.shape[0], 1)
+    weighted_posterior_indx = np.random.choice(indx, size = len(indx), p = posterior_weights/np.sum(posterior_weights))
+    weighted_posterior = posterior_sample_df.iloc[weighted_posterior_indx]
+    
+    return weighted_posterior
+    
+
+def get_posterior_df_w_pops(posterior_sample, weights, eps):
+
+    result_posterior = weight_posterior(posterior_sample, weights)
+    result_posterior["eps"] = np.repeat([eps], len(result_posterior["par1"]))
+    
+    return result_posterior
+
+def plot_convergence_of_threshold_pops(clade, output_directory):
+    """Visualize the convergence of ABC-SMC by plotting the discrepancies as a scatterplot for all threshold populations.
+
+    Args:
+        clade (string): clade of interest (A, C2, B or C1)
+        output_directory (string): path to results for the clade of interest
+
+    """
+    
+    res_elfi = np.load(f"{output_directory}result.npy", allow_pickle = True)[()]
+    res_pops = res_elfi.populations # all threshold populations in a list
+    
+    fig, axes = plt.subplots(1, 4, figsize=(18, 6))
+    
+    for p in range(0, len(res_pops)):
+    
+        pop = res_pops[p]
+        
+        eps = pop.threshold#thresholds[p]
+        weights = pop.weights
+
+        weighted_pop = weight_posterior(pop.samples, weights)
+        par1 = weighted_pop["par1"]
+        par2 = weighted_pop["par2"]
+        #dt = pop.samples["Dt"]
+    
+        if p == 0:
+            pop_df = get_posterior_df_w_pops(pop.samples, weights, eps)
+        else:
+            pop_df = pd.concat([pop_df, get_posterior_df_w_pops(pop.samples, weights, eps)])
+        
+        #sns.kdeplot(x = par1, y = par2, ax = axes[0,p], color = "#34a8eb", label = "Clade A")
+        axes[p].scatter(par1, par2, s = 1, color = "#34a8eb", label = f"Clade {clade}")
+        if p == 0:
+            axes[p].set_title(f"ST131-{clade} Threshold: {eps}")
+            #axes[0, 0].legend()
+        else:
+            axes[p].set_title(f"Threshold: {eps}")
+        axes[p].tick_params(axis='x', rotation=45)
+        axes[p].set_xlabel("Net transmission")
+        axes[p].set_ylim(1, 3)
+        axes[p].set_xlim(0, 0.1)
+
+
+    axes[0].set_ylabel("R")
+    #axes[1,0].set_ylabel("R")
+    plt.tight_layout()
+    plt.savefig(os.path.join(output_directory, f"vis/population_convergence.pdf"), format="pdf", bbox_inches="tight")
+    plt.clf()
+    
+    # For ggplot2:
+    pop_df.to_csv(f"{output_directory}/csvs/result_pop_samples.csv", index = False)
+
+    
