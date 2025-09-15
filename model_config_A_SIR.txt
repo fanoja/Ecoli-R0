@@ -21,4 +21,4 @@ or_data_file = data/ST131_clades_OR_E_coli_carriage_disease_collapsed_wBSAC2.xls
 n_sims = 10000
 batch_size = 1000
 seed = 20170530
-schedule = [2.0, 1.5, 1.0, 0.5]
+schedule = [1.0, 0.5, 0.35, 0.1]
