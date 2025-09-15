@@ -1,6 +1,9 @@
-# Estimating R0 for Ecoli
+# Estimating R0 for *E. coli*
 
 Analysis code for the estimation of $R_0$ for *E. coli* colonisation.
+
+[![DOI](https://zenodo.org/badge/906317813.svg)](https://doi.org/10.5281/zenodo.17127905)
+
 
 ## Usage
 
